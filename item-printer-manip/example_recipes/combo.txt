@@ -1,0 +1,28 @@
+1783977393, 2026-07-13 21:16:33
+18 total PP Max
+--> Print 1 in regular mode.
+x8 Honey
+--> Trigger item bonus, then print 5.
+x4 Black Belt
+x6 PP Max
+x6 PP Max
+x4 Flame Orb
+x6 PP Max
+
+
+
+2537199023, 2050-05-26 17:30:23
+900000 exp
+--> Print 1 in regular mode.
+x2 Strawberry Sweet
+--> Trigger item bonus, then print 10.
+x20 Fighting Tera Shard
+x40 Fairy Tera Shard
+x14 Big Mushroom
+x6 Calcium
+x10 Exp. Candy XL
+x12 Tiny Mushroom
+x10 Exp. Candy XL
+x4 Max Revive
+x4 HP Up
+x10 Exp. Candy XL
