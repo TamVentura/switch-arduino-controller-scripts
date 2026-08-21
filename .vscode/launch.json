@@ -15,7 +15,28 @@
       "name": "Python Debugger: Super Dex Filler",
       "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/item-printer-manip/item-printer-manip.py",
+      "program": "${workspaceFolder}/super-dex-filler/super-dex-filler.py",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Python Debugger: Dynamax Shiny Instakill",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/dynamax-adventures-shiny/instakill.py",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Python Debugger: Porto Marinada Feathers",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/porto-marinada/main.py",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Python Debugger: Outbreak Finder",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/outbreak_finder/main.py",
       "console": "integratedTerminal"
     }
   ]

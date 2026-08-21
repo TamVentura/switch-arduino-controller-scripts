@@ -1,0 +1,310 @@
+{
+  "recorded_at": "2026-04-15T09:50:45",
+  "duration": 8.48,
+  "commands": [
+    {
+      "sleep_before": 1.2396,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.1728515625,
+        "y": 0.0
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.2998046875,
+        "y": 0.0
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.45068359375,
+        "y": -0.122100830078125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.564453125,
+        "y": -0.167022705078125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.66064453125,
+        "y": -0.229034423828125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.7119140625,
+        "y": -0.282257080078125
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.71435546875,
+        "y": -0.351104736328125
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.6806640625,
+        "y": -0.456085205078125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.6708984375,
+        "y": -0.546417236328125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.71435546875,
+        "y": -0.641143798828125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.78564453125,
+        "y": -0.707550048828125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.84521484375,
+        "y": -0.735870361328125
+      }
+    },
+    {
+      "sleep_before": 0.1869,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.830078125,
+        "y": -0.769073486328125
+      }
+    },
+    {
+      "sleep_before": 0.034,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.78125,
+        "y": -0.814483642578125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.759765625,
+        "y": -0.838409423828125
+      }
+    },
+    {
+      "sleep_before": 0.101,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.7353515625,
+        "y": -0.855499267578125
+      }
+    },
+    {
+      "sleep_before": 0.1016,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.71142578125,
+        "y": -0.874053955078125
+      }
+    },
+    {
+      "sleep_before": 0.4546,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.73486328125,
+        "y": -0.851593017578125
+      }
+    },
+    {
+      "sleep_before": 0.3024,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.76416015625,
+        "y": -0.818878173828125
+      }
+    },
+    {
+      "sleep_before": 0.0513,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.7890625,
+        "y": -0.782257080078125
+      }
+    },
+    {
+      "sleep_before": 0.0173,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.7900390625,
+        "y": -0.697784423828125
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.693359375,
+        "y": -0.576202392578125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.47705078125,
+        "y": -0.482452392578125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.18359375,
+        "y": -0.192901611328125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "sleep_before": 0.1011,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.227996826171875
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.345672607421875
+      }
+    },
+    {
+      "sleep_before": 0.017,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.505828857421875
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.680633544921875
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.845184326171875
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.999969482421875
+      }
+    },
+    {
+      "sleep_before": 0.1521,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.1396484375,
+        "y": 0.999969482421875
+      }
+    },
+    {
+      "sleep_before": 0.0173,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.21533203125,
+        "y": 0.999969482421875
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.26708984375,
+        "y": 0.999969482421875
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.29443359375,
+        "y": 0.851531982421875
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.25341796875,
+        "y": 0.637664794921875
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.140625,
+        "y": 0.350067138671875
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    }
+  ]
+}

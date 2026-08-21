@@ -1,49 +1,36 @@
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from switch import *
+
 import calendar
-import os
-import sys
 import threading
 import time
-
-from colorama import Fore, Style, init
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "utils"))
-import capture
-import controller
-import ocr
-
-init()
-
-controller.connect("COM6")
-# controller.connect(None)  # disable serial
-
-press = controller.press
-hold = controller.hold
 
 _COUNT_SEQUENCE = [1, 5, 10]
 
 # ---------------------------------------------------------------------------
-# Crop regions (x1, y1, x2, y2) for each date field on a 1920x1080 frame
+# Crop regions (x1, y1, x2, y2) expressed in 4K (3840×2160)
 # ---------------------------------------------------------------------------
 _DATE_REGIONS = {
-    "day": (260, 466, 370, 570),
-    "month": (469, 466, 580, 570),
-    "year": (681, 466, 853, 570),
-    "hour": (1023, 466, 1117, 570),
-    "minute": (1230, 466, 1332, 570),
+    "day": (520, 932, 740, 1140),
+    "month": (938, 932, 1160, 1140),
+    "year": (1362, 932, 1706, 1140),
+    "hour": (2046, 932, 2234, 1140),
+    "minute": (2460, 932, 2664, 1140),
 }
 
-_COUNT_REGION = (1668, 370, 1716, 406)
-_COUNT_REGION_LOTTO = (1641, 458, 1743, 515)
+_COUNT_REGION = (3336, 740, 3432, 812)
+_COUNT_REGION_LOTTO = (3282, 916, 3486, 1030)
 
 # Regions shown in the debug overlay — date fields + both count boxes
 _DEBUG_REGIONS = [
-    ("day", 260, 466, 370, 570, (0, 255, 0)),
-    ("month", 469, 466, 580, 570, (0, 200, 255)),
-    ("year", 681, 466, 853, 570, (255, 100, 0)),
-    ("hour", 1023, 466, 1117, 570, (255, 0, 200)),
-    ("minute", 1230, 466, 1332, 570, (0, 100, 255)),
-    ("count", 1668, 370, 1716, 406, (255, 255, 0)),
-    ("count_lotto", 1641, 458, 1743, 515, (0, 255, 255)),
+    ("day", 520, 932, 740, 1140, (0, 255, 0)),
+    ("month", 938, 932, 1160, 1140, (0, 200, 255)),
+    ("year", 1362, 932, 1706, 1140, (255, 100, 0)),
+    ("hour", 2046, 932, 2234, 1140, (255, 0, 200)),
+    ("minute", 2460, 932, 2664, 1140, (0, 100, 255)),
+    ("count", 3336, 740, 3432, 812, (255, 255, 0)),
+    ("count_lotto", 3282, 916, 3486, 1030, (0, 255, 255)),
 ]
 
 _DATE_OCR_CONFIGS = [
@@ -125,20 +112,20 @@ def set_date(target_day, target_month, target_year, target_hour, target_minute):
     cur_day, cur_month, cur_year, cur_hour, cur_minute = current
 
     # Navigate Day → Year (skip month)
-    press("1", change_input_delay)  # Day → Month
-    press("1", change_input_delay)  # Month → Year
+    click("1", change_input_delay)  # Day → Month
+    click("1", change_input_delay)  # Month → Year
 
     # Year (2000–2099)
     key, count = _shortest_path(cur_year, target_year, 10000)
     if count:
-        press(key, change_time_delay, count)
-    press("3", change_input_delay)  # Year → Month
+        click(key, change_time_delay, count)
+    click("3", change_input_delay)  # Year → Month
 
     # Month (1–12)
     key, count = _shortest_path(cur_month, target_month, 12)
     if count:
-        press(key, change_time_delay, count)
-    press("3", change_input_delay)  # Month → Day
+        click(key, change_time_delay, count)
+    click("3", change_input_delay)  # Month → Day
 
     # Day — re-read since changing month may have clamped it
     current = read_current_date()
@@ -148,23 +135,23 @@ def set_date(target_day, target_month, target_year, target_hour, target_minute):
     max_days = calendar.monthrange(target_year, target_month)[1]
     key, count = _shortest_path(cur_day, target_day, max_days)
     if count:
-        press(key, change_time_delay, count)
+        click(key, change_time_delay, count)
 
     # Navigate Day → Hour (skip month and year)
-    press("1", change_input_delay)  # Day → Month
-    press("1", change_input_delay)  # Month → Year
-    press("1", change_input_delay)  # Year → Hour
+    click("1", change_input_delay)  # Day → Month
+    click("1", change_input_delay)  # Month → Year
+    click("1", change_input_delay)  # Year → Hour
 
     # Hour (0–23)
     key, count = _shortest_path(cur_hour, target_hour, 24)
     if count:
-        press(key, change_time_delay, count)
-    press("1", change_input_delay)  # Hour → Minute
+        click(key, change_time_delay, count)
+    click("1", change_input_delay)  # Hour → Minute
 
     # Minute (0–59)
     key, count = _shortest_path(cur_minute, target_minute, 60)
     if count:
-        press(key, change_time_delay, count)
+        click(key, change_time_delay, count)
 
 
 def _navigate_count(target):
@@ -179,22 +166,22 @@ def _navigate_count(target):
     fwd = (idx_tgt - idx_cur) % size
     bwd = (idx_cur - idx_tgt) % size
     if fwd <= bwd:
-        press("R", 0.2, fwd)
+        click("R", 0.2, fwd)
     else:
-        press("L", 0.2, bwd)
+        click("L", 0.2, bwd)
 
 
 def run_regular(target_count):
     """Set count to target then run the item printer."""
     _navigate_count(target_count)
-    press("X", 2)
-    press("A", 5)
-    press("A", 15)
-    press("A", 2)
-    press("A")
-    capture.wait_for_pixel(39, 1050, "#0254a0")
+    click("X", 2)
+    click("A", 5)
+    click("A", 15)
+    click("A", 2)
+    click("A")
+    capture.wait_for_pixel(78, 2100, "#0254a0")
     time.sleep(0.5)
-    press("B", 5)
+    click("B", 5)
 
 
 def parse_recipes(content):
@@ -219,28 +206,49 @@ def run_combo(counts):
     """Run multiple sequential prints from one date seed. B only on the last."""
     for i, count in enumerate(counts):
         _navigate_count(count)
-        press("X", 2)
-        press("A", 5)
-        press("A", 15)
-        press("A", 2)
-        press("A", 5)
-        capture.wait_for_pixel(39, 1050, "#0254a0")
+        click("X", 2)
+        click("A", 5)
+        click("A", 15)
+        click("A", 2)
+        click("A", 5)
+        capture.wait_for_pixel(78, 2100, "#0254a0")
         time.sleep(0.5)
         if i == len(counts) - 1:
-            press("B", 3)
+            click("B", 3)
 
 
 def manip():
     while not capture.is_stopped():
-        line = input("Recipe: ").strip()
+        #INSERTED NOTIFIER HERE
+        _r = notifier.send_and_wait(
+            text="Recipe:",
+            console_prompt="Recipe: ",
+            wait_for_text=True,
+        )
+        line = (_r.action_value or "").strip()
+        # line = input("Recipe: ").strip()
         if not line:
             continue
 
         if line.lower() == "loop":
-            repeat = int(input("Repeat: ").strip())
+            #INSERTED NOTIFIER HERE
+            _r = notifier.send_and_wait(
+                text="Repeat:",
+                console_prompt="Repeat: ",
+                wait_for_text=True,
+            )
+            repeat = int((_r.action_value or "1").strip())
+            # repeat = int(input("Repeat: ").strip())
             recipe_lines = []
             while True:
-                l = input("Recipe / EndLoop: ").strip()
+                #INSERTED NOTIFIER HERE
+                _r = notifier.send_and_wait(
+                    text="Recipe / EndLoop:",
+                    console_prompt="Recipe / EndLoop: ",
+                    wait_for_text=True,
+                )
+                l = (_r.action_value or "").strip()
+                # l = input("Recipe / EndLoop: ").strip()
                 if l.lower() == "endloop":
                     break
                 if l:
@@ -256,8 +264,8 @@ def manip():
 
         for _ in range(repeat):
             for (year, month, day, hour, minute, second), counts in recipes:
-                press("A", 2)
-                press("A", 1)
+                click("A", 2)
+                click("A", 1)
                 if capture.is_stopped():
                     break
                 gotoDateSettings()
@@ -273,29 +281,29 @@ def manip():
 
 
 def gotoDateSettings():
-    press("H", 1)
-    press("2")
-    hold("1", 0.65, 0.1)
-    press("A", 1)
-    hold("2", 1.5, 0.1)
-    press("1")
-    hold("2", 0.85, 0.1)
-    press("A")
-    hold("2", 0.4, 0.1)
-    press("A")
+    click("H", 1)
+    click("2")
+    hold_for("1", 0.65, 0.1)
+    click("A", 1)
+    hold_for("2", 1.5, 0.1)
+    click("1")
+    hold_for("2", 0.85, 0.1)
+    click("A")
+    hold_for("2", 0.4, 0.1)
+    click("A")
 
 
 def afterDateSettings(seconds):
     t = threading.Timer(
         seconds - 1.3,
-        press,
+        click,
         args=("A", 2),
     )
-    press("1", 0.5)
-    press("A", 0)
+    click("1", 0.5)
+    click("A", 0)
     t.start()
     time.sleep(0.5)
-    press("H", 0.5, repeat=2)
+    click("H", 0.5, repeat=2)
     t.join()
 
 
@@ -308,15 +316,4 @@ def _key_handler(key, frame):
 
 
 if __name__ == "__main__":
-    capture.start_capture(
-        press_callback=press,
-        debug_regions=_DEBUG_REGIONS,
-        key_callback=_key_handler,
-    )
-    capture.wait_ready()
-    try:
-        manip()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        capture.stop()
+    launch(manip, debug_regions=_DEBUG_REGIONS, key_callback=_key_handler)

@@ -1,0 +1,912 @@
+{
+  "recorded_at": "2026-04-15T13:10:30",
+  "duration": 8.141,
+  "commands": [
+    {
+      "sleep_before": 0.5982,
+      "cmd": "hold",
+      "args": {
+        "key": "+"
+      }
+    },
+    {
+      "sleep_before": 0.1011,
+      "cmd": "release",
+      "args": {
+        "key": "+"
+      }
+    },
+    {
+      "sleep_before": 0.219,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -0.1044921875,
+        "y": 0.0
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -0.224609375,
+        "y": 0.0
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.220703125,
+        "y": -0.106964111328125
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -0.322265625,
+        "y": 0.104461669921875
+      }
+    },
+    {
+      "sleep_before": 0.0169,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.3759765625,
+        "y": -0.193878173828125
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -0.46337890625,
+        "y": 0.194793701171875
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.49658203125,
+        "y": -0.230010986328125
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -0.642578125,
+        "y": 0.269989013671875
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.63330078125,
+        "y": -0.259796142578125
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -0.85205078125,
+        "y": 0.347137451171875
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.8310546875,
+        "y": -0.347198486328125
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -0.99658203125,
+        "y": 0.418914794921875
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.9873046875,
+        "y": -0.457550048828125
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -1.0,
+        "y": 0.370574951171875
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -1.0,
+        "y": 0.334442138671875
+      }
+    },
+    {
+      "sleep_before": 0.0341,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -1.0,
+        "y": 0.306121826171875
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -1.0,
+        "y": 0.287078857421875
+      }
+    },
+    {
+      "sleep_before": 0.034,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -1.0,
+        "y": 0.263641357421875
+      }
+    },
+    {
+      "sleep_before": 0.0341,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -1.0,
+        "y": -0.478546142578125
+      }
+    },
+    {
+      "sleep_before": 0.0342,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -1.0,
+        "y": 0.243133544921875
+      }
+    },
+    {
+      "sleep_before": 0.017,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -1.0,
+        "y": -0.503448486328125
+      }
+    },
+    {
+      "sleep_before": 0.0336,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -1.0,
+        "y": 0.214813232421875
+      }
+    },
+    {
+      "sleep_before": 0.0845,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -1.0,
+        "y": -0.533233642578125
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -1.0,
+        "y": 0.193817138671875
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -1.0,
+        "y": -0.551788330078125
+      }
+    },
+    {
+      "sleep_before": 0.0339,
+      "cmd": "hold",
+      "args": {
+        "key": "{"
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -1.0,
+        "y": -0.576202392578125
+      }
+    },
+    {
+      "sleep_before": 0.0848,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -1.0,
+        "y": -0.597686767578125
+      }
+    },
+    {
+      "sleep_before": 0.0674,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -1.0,
+        "y": 0.170867919921875
+      }
+    },
+    {
+      "sleep_before": 0.034,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -1.0,
+        "y": 0.146942138671875
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -1.0,
+        "y": -0.574249267578125
+      }
+    },
+    {
+      "sleep_before": 0.034,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -1.0,
+        "y": -0.553253173828125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "release",
+      "args": {
+        "key": "{"
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -1.0,
+        "y": 0.120574951171875
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.98876953125,
+        "y": -0.588409423828125
+      }
+    },
+    {
+      "sleep_before": 0.0173,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.935546875,
+        "y": -0.634796142578125
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -1.0,
+        "y": 0.0
+      }
+    },
+    {
+      "sleep_before": 0.0173,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.892578125,
+        "y": -0.677764892578125
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.8681640625,
+        "y": -0.707061767578125
+      }
+    },
+    {
+      "sleep_before": 0.034,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.82177734375,
+        "y": -0.762237548828125
+      }
+    },
+    {
+      "sleep_before": 0.0345,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.75341796875,
+        "y": -0.830108642578125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.6865234375,
+        "y": -0.890655517578125
+      }
+    },
+    {
+      "sleep_before": 0.0174,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.61962890625,
+        "y": -0.942901611328125
+      }
+    },
+    {
+      "sleep_before": 0.017,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.56982421875,
+        "y": -0.978546142578125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.5380859375,
+        "y": -0.998077392578125
+      }
+    },
+    {
+      "sleep_before": 0.0677,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -1.0,
+        "y": -0.103057861328125
+      }
+    },
+    {
+      "sleep_before": 0.017,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.56494140625,
+        "y": -0.988800048828125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -1.0,
+        "y": -0.131866455078125
+      }
+    },
+    {
+      "sleep_before": 0.0341,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.5888671875,
+        "y": -0.971710205078125
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -1.0,
+        "y": -0.149444580078125
+      }
+    },
+    {
+      "sleep_before": 0.0509,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.5693359375,
+        "y": -0.980987548828125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.51708984375,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -0.88916015625,
+        "y": -0.170928955078125
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.466796875,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -0.65771484375,
+        "y": -0.177764892578125
+      }
+    },
+    {
+      "sleep_before": 0.017,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.4462890625,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": -0.32666015625,
+        "y": -0.133331298828125
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "sleep_before": 0.0843,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.4873046875,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.034,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.51123046875,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0675,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.484375,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.45751953125,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.41748046875,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.35791015625,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.2822265625,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.22900390625,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0682,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.26171875,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0174,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": -0.104034423828125
+      }
+    },
+    {
+      "sleep_before": 0.0169,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": -0.202178955078125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": -0.395538330078125
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": -0.606964111328125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": -0.763214111328125
+      }
+    },
+    {
+      "sleep_before": 0.0168,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": -0.903350830078125
+      }
+    },
+    {
+      "sleep_before": 0.0173,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.2880859375,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": -0.989776611328125
+      }
+    },
+    {
+      "sleep_before": 0.017,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.306640625,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0344,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.330078125,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.034,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": -0.888702392578125
+      }
+    },
+    {
+      "sleep_before": 0.0173,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": -0.725616455078125
+      }
+    },
+    {
+      "sleep_before": 0.017,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": -0.554229736328125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": -0.434600830078125
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": -0.334503173828125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": -0.164093017578125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "sleep_before": 0.1347,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.31201171875,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.1013,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.2880859375,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.2532,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.2578125,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0676,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.224609375,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0344,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.124969482421875
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.201171875,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.150848388671875
+      }
+    },
+    {
+      "sleep_before": 0.034,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.175262451171875
+      }
+    },
+    {
+      "sleep_before": 0.0168,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.154296875,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.196746826171875
+      }
+    },
+    {
+      "sleep_before": 0.0171,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.1142578125,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.0,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.224090576171875
+      }
+    },
+    {
+      "sleep_before": 0.1016,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.192352294921875
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.162078857421875
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.100555419921875
+      }
+    },
+    {
+      "sleep_before": 0.0168,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "sleep_before": 0.2868,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.10302734375,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.2203,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": -0.1328125,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 0.2539,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.0,
+        "y": -1.0
+      }
+    },
+    {
+      "sleep_before": 1.4321,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.0,
+        "y": -0.969757080078125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.12451171875,
+        "y": -0.844757080078125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.16650390625,
+        "y": -0.740264892578125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.16357421875,
+        "y": -0.579132080078125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.123046875,
+        "y": -0.303741455078125
+      }
+    },
+    {
+      "sleep_before": 0.0172,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "sleep_before": 0.5222,
+      "cmd": "hold",
+      "args": {
+        "key": "+"
+      }
+    },
+    {
+      "sleep_before": 0.1347,
+      "cmd": "release",
+      "args": {
+        "key": "+"
+      }
+    }
+  ]
+}

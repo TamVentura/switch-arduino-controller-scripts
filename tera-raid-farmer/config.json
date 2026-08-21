@@ -1,0 +1,18 @@
+{
+  "host_api_url": "http://127.0.0.1:8080",
+  "rewards_mash_count": 25,
+  "auto_catch": true,
+  "catch_ball": "Timer Ball",
+  "belly_drum_slot": 1,
+  "drain_punch_slot": 2,
+  "use_tera": true,
+  "tera_button": "R",
+  "combat_max_turns": 50,
+  "turn_poll_timeout_sec": 20,
+  "battle_start_timeout_sec": 45,
+  "move_select_delay_sec": 0.6,
+  "menu_action_timeout_sec": 4.0,
+  "move_nav_max_steps": 6,
+  "com_port": "COM6",
+  "baudrate": 115200
+}

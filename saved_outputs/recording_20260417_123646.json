@@ -1,0 +1,22 @@
+{
+  "recorded_at": "2026-04-17T12:36:46",
+  "duration": 7.011,
+  "commands": [
+    {
+      "sleep_before": 0.6109,
+      "cmd": "set_left_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    },
+    {
+      "sleep_before": 0.0,
+      "cmd": "set_right_stick",
+      "args": {
+        "x": 0.0,
+        "y": 0.0
+      }
+    }
+  ]
+}

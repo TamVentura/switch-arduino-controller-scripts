@@ -1,0 +1,34 @@
+{
+  "recorded_at": "2026-04-17T10:37:26",
+  "duration": 12.772,
+  "commands": [
+    {
+      "sleep_before": 4.6273,
+      "cmd": "hold",
+      "args": {
+        "key": "R"
+      }
+    },
+    {
+      "sleep_before": 0.2,
+      "cmd": "release",
+      "args": {
+        "key": "R"
+      }
+    },
+    {
+      "sleep_before": 0.7407,
+      "cmd": "hold",
+      "args": {
+        "key": "3"
+      }
+    },
+    {
+      "sleep_before": 0.2002,
+      "cmd": "release",
+      "args": {
+        "key": "3"
+      }
+    }
+  ]
+}
