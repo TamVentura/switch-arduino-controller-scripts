@@ -58,7 +58,10 @@ class AttackerConfig:
     # ── Catch (pokemon mode) ──
     catch_ball: str = "Timer Ball"       # ball to always use when catching
     catch_timeout_sec: float = 20.0      # max wait for the ball carousel to appear
-    ball_carousel_max_steps: int = 15    # max right-steps to find the target ball
+    # Max right-steps to find the target ball. The carousel is a ring of every ball
+    # the player owns (22 live on 2026-08-24), and we only step right, so this must
+    # exceed the ring size or a far-side start never reaches the target.
+    ball_carousel_max_steps: int = 25
 
     @classmethod
     def from_dict(cls, cfg: dict) -> "AttackerConfig":
@@ -77,7 +80,7 @@ class AttackerConfig:
             move_nav_max_steps=int(cfg.get("move_nav_max_steps", 6)),
             catch_ball=str(cfg.get("catch_ball", "Timer Ball")),
             catch_timeout_sec=float(cfg.get("catch_timeout_sec", 20.0)),
-            ball_carousel_max_steps=int(cfg.get("ball_carousel_max_steps", 15)),
+            ball_carousel_max_steps=int(cfg.get("ball_carousel_max_steps", 25)),
         )
 
 
@@ -114,6 +117,11 @@ class BattleIO:
     # Catch seams (OCR-driven ball carousel). Defaults keep tests/other flows working.
     read_ball_name: Callable[[], str] = lambda: ""
     at_ball_select: Callable[[], bool] = lambda: False
+    # True on the post-victory Catch / Don't-Catch prompt (= boss defeated).
+    at_catch_prompt: Callable[[], bool] = lambda: False
+    # Short D-pad tap (single cell). A normal click holds ~0.2s → the carousel/keypad
+    # auto-repeats and skips a cell; a 50ms tap moves exactly one (validated live).
+    tap: Callable[..., None] = lambda *a, **k: None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -130,7 +138,9 @@ def real_io(battle_state_fn: Optional[Callable[[], Optional[bool]]] = None) -> B
     alone for the stop condition (battle_ended()).
     """
     import pokemon_sv
+    import capture
     from controller import click as _click
+    from controller import hold_for as _hold_for
 
     def _at_text_box() -> bool:
         try:
@@ -155,6 +165,21 @@ def real_io(battle_state_fn: Optional[Callable[[], Optional[bool]]] = None) -> B
         # Heuristic: the ball carousel is open when the banner OCRs to a *Ball name.
         return "ball" in _read_ball_name().lower()
 
+    def _at_catch_prompt() -> bool:
+        # Gold "Catch" button (#ffe300) on the post-victory Catch/Don't-Catch prompt.
+        # Calibrated live 2026-08-24: this region reads ~0.9 on the catch prompt and
+        # ~0 elsewhere. It partially overlaps the command menu's gold "Battle" button,
+        # so boss_defeated() gates this with `not is_command_menu()`.
+        try:
+            return capture.region_color_ratio(
+                3100, 1780, 3740, 1880, "#ffe300", tolerance=80) >= 0.5
+        except Exception:
+            return False
+
+    def _tap(token, sleep=0.0):
+        # 50ms D-pad tap → one cell (no auto-repeat double-step). See BattleIO.tap.
+        _hold_for(token, 0.05, sleep=sleep)
+
     return BattleIO(
         click=_click,
         is_command_menu=pokemon_sv.is_command_menu,
@@ -167,6 +192,8 @@ def real_io(battle_state_fn: Optional[Callable[[], Optional[bool]]] = None) -> B
         get_move_slot=pokemon_sv.get_move_slot,
         read_ball_name=_read_ball_name,
         at_ball_select=_at_ball_select,
+        at_catch_prompt=_at_catch_prompt,
+        tap=_tap,
     )
 
 
@@ -185,8 +212,15 @@ def boss_defeated(io: BattleIO) -> bool:
 
     Only meaningful AFTER the battle has started (see wait_for_battle_start),
     because battle_ended()'s minimap check is also true in the pre-battle lobby.
+
+    The instant the boss dies the game shows the Catch / Don't-Catch prompt, which is
+    NOT the overworld and NOT the rewards screen — so battle_ended() alone stays False
+    there and the old macro spun on turn-timeouts until the raid finally ended. We also
+    treat that catch prompt as "boss down", gated by `not is_command_menu()` so the
+    command menu's gold 'Battle' button (which overlaps the 'Catch' button region) can
+    never be misread as a defeat mid-fight.
     """
-    return io.battle_ended()
+    return io.battle_ended() or (io.at_catch_prompt() and not io.is_command_menu())
 
 
 def wait_for_battle_start(cfg: AttackerConfig, io: BattleIO) -> bool:
@@ -284,6 +318,7 @@ def commit_move(cfg: AttackerConfig, io: BattleIO) -> bool:
     command menu, the press did NOT commit (a boss interrupt returned our turn) →
     return False so the caller re-opens and retries. This distinction is what stops
     a mis-fire from being mistaken for a committed move."""
+    io.click("A", sleep=1)
     io.click("A", sleep=cfg.move_select_delay_sec)
     deadline = io.now() + cfg.menu_action_timeout_sec
     while io.now() < deadline:
@@ -367,7 +402,8 @@ def catch_pokemon(cfg: AttackerConfig, io: Optional[BattleIO] = None) -> bool:
             log("CATCH", f"ball selected: {cfg.catch_ball}")
             io.click("A", sleep=d)      # throw
             return True
-        io.click("1", sleep=d)          # D-Pad Right → next ball
+        io.tap("1", sleep=d)            # D-Pad Right → next ball (short tap: one ball,
+        #                                 a 0.2s click auto-repeats and skips one)
 
     log("WARNING", f"'{cfg.catch_ball}' not found in {cfg.ball_carousel_max_steps} "
                    "steps — throwing the current ball")

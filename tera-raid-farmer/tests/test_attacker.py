@@ -48,9 +48,13 @@ def make_io(**overrides):
     def click(token, sleep=0.0, repeat=1):
         clicks.append((token, repeat))
 
+    def tap(token, sleep=0.0):
+        clicks.append((token, 1))
+
     clock = Clock()
     defaults = dict(
         click=click,
+        tap=tap,
         is_command_menu=lambda: False,
         is_move_select=lambda: False,
         tera_available=lambda: False,
@@ -79,6 +83,25 @@ def test_boss_defeated_false_while_vision_sees_battle():
 def test_boss_defeated_true_when_vision_sees_end():
     io, _ = make_io(battle_ended=lambda: True)
     assert A.boss_defeated(io) is True
+
+
+def test_boss_defeated_true_on_catch_prompt():
+    # Boss dies -> Catch/Don't-Catch prompt (not overworld, not the rewards screen),
+    # so battle_ended() is still False but the catch prompt means the boss is down.
+    io, _ = make_io(battle_ended=lambda: False,
+                    at_catch_prompt=lambda: True,
+                    is_command_menu=lambda: False)
+    assert A.boss_defeated(io) is True
+
+
+def test_boss_defeated_gated_off_on_command_menu():
+    # The command menu's gold "Battle" button overlaps the "Catch" button region, so
+    # at_catch_prompt() can read true there; the `not is_command_menu()` gate must keep
+    # a live command menu from ever being mistaken for a defeat mid-fight.
+    io, _ = make_io(battle_ended=lambda: False,
+                    at_catch_prompt=lambda: True,
+                    is_command_menu=lambda: True)
+    assert A.boss_defeated(io) is False
 
 
 def test_boss_defeated_ignores_host_flag():
@@ -390,15 +413,15 @@ def test_catch_navigates_to_timer_ball():
         return state["cur"]
 
     io, clicks = make_io(at_ball_select=lambda: True, read_ball_name=read)
-    # advance the carousel name each Right press
+    # advance the carousel name each Right press (now a short tap, not a click)
     seq = iter(["Repeat Ball", "Timer Ball"])
-    base_click = io.click
+    base_tap = io.tap
 
-    def click(tok, sleep=0.0, repeat=1):
-        base_click(tok, sleep, repeat)
+    def tap(tok, sleep=0.0):
+        base_tap(tok, sleep)
         if tok == "1":
             state["cur"] = next(seq, "Timer Ball")
-    io.click = click
+    io.tap = tap
 
     ok = A.catch_pokemon(AttackerConfig(catch_ball="Timer Ball"), io)
     assert ok is True
