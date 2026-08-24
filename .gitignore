@@ -1,3 +1,4 @@
 # Throwaway debug / calibration artifacts — kept on disk, never committed.
 screenshots/
 tera-raid-farmer/calib_frames/
+**/__pycache__/
