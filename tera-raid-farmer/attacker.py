@@ -62,6 +62,8 @@ class AttackerConfig:
     # the player owns (22 live on 2026-08-24), and we only step right, so this must
     # exceed the ring size or a far-side start never reaches the target.
     ball_carousel_max_steps: int = 25
+    # Max wait for the post-catch reward/summary screens to clear to the overworld.
+    rewards_clear_timeout_sec: float = 45.0
 
     @classmethod
     def from_dict(cls, cfg: dict) -> "AttackerConfig":
@@ -81,6 +83,7 @@ class AttackerConfig:
             catch_ball=str(cfg.get("catch_ball", "Timer Ball")),
             catch_timeout_sec=float(cfg.get("catch_timeout_sec", 20.0)),
             ball_carousel_max_steps=int(cfg.get("ball_carousel_max_steps", 25)),
+            rewards_clear_timeout_sec=float(cfg.get("rewards_clear_timeout_sec", 45.0)),
         )
 
 
@@ -122,6 +125,10 @@ class BattleIO:
     # Short D-pad tap (single cell). A normal click holds ~0.2s → the carousel/keypad
     # auto-repeats and skips a cell; a 50ms tap moves exactly one (validated live).
     tap: Callable[..., None] = lambda *a, **k: None
+    # True on the raid result "Rewards" screen (OCR of the 'Rewards' label).
+    at_rewards: Callable[[], bool] = lambda: False
+    # True once back in the overworld (minimap in the corner).
+    in_overworld: Callable[[], bool] = lambda: False
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -180,6 +187,21 @@ def real_io(battle_state_fn: Optional[Callable[[], Optional[bool]]] = None) -> B
         # 50ms D-pad tap → one cell (no auto-repeat double-step). See BattleIO.tap.
         _hold_for(token, 0.05, sleep=sleep)
 
+    def _at_rewards() -> bool:
+        # OCR the raid-result "Rewards" label (top-left of the result screen).
+        # Calibrated live 2026-08-24: reads "Rewards" at this 4K region.
+        try:
+            return "reward" in pokemon_sv.ocr.read_field(
+                capture.get_latest_frame(), 296, 464, 556, 544).lower()
+        except Exception:
+            return False
+
+    def _in_overworld() -> bool:
+        try:
+            return pokemon_sv.get_mode() == pokemon_sv.Mode.IN_GAME
+        except Exception:
+            return False
+
     return BattleIO(
         click=_click,
         is_command_menu=pokemon_sv.is_command_menu,
@@ -194,6 +216,8 @@ def real_io(battle_state_fn: Optional[Callable[[], Optional[bool]]] = None) -> B
         at_ball_select=_at_ball_select,
         at_catch_prompt=_at_catch_prompt,
         tap=_tap,
+        at_rewards=_at_rewards,
+        in_overworld=_in_overworld,
     )
 
 
@@ -408,6 +432,35 @@ def catch_pokemon(cfg: AttackerConfig, io: Optional[BattleIO] = None) -> bool:
     log("WARNING", f"'{cfg.catch_ball}' not found in {cfg.ball_carousel_max_steps} "
                    "steps — throwing the current ball")
     io.click("A", sleep=d)
+    return False
+
+
+def clear_rewards(cfg: AttackerConfig, io: Optional[BattleIO] = None) -> bool:
+    """Detection-driven clearing of the post-catch screens — replaces blind A/B
+    mashing.
+
+    After the throw the game shows: the catch/"You caught X!" result with its
+    'Rewards' list ('A' Next), then a Pokédex "sent to your Boxes!" message box (the
+    dark-box continue arrow), then the overworld. We advance A ONLY on a detected
+    message (at_text_box) or Rewards page (at_rewards, OCR of the 'Rewards' label),
+    wait out animations / "Communicating…", and stop the instant the minimap is back
+    (in_overworld). Bounded by rewards_clear_timeout_sec. Returns True if it reached
+    the overworld."""
+    if io is None:
+        io = real_io()
+    log = _logger()
+    deadline = io.now() + cfg.rewards_clear_timeout_sec
+    while io.now() < deadline:
+        if io.in_overworld():
+            log("OK", "post-battle screens cleared — back in the overworld")
+            return True
+        if io.at_text_box():
+            io.click("A", sleep=0.4)          # advance a message / continue arrow
+        elif io.at_rewards():
+            io.click("A", sleep=0.5)          # 'Next' through the Rewards result
+        else:
+            io.sleep(cfg.vision_poll_interval_sec)  # catch animation / "Communicating…"
+    log("WARNING", "post-battle clear timed out before reaching the overworld")
     return False
 
 

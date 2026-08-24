@@ -425,9 +425,44 @@ def test_catch_navigates_to_timer_ball():
 
     ok = A.catch_pokemon(AttackerConfig(catch_ball="Timer Ball"), io)
     assert ok is True
-    # Pressed Right twice (Quick→Repeat→Timer), then A to throw.
+    # Tapped Right twice (Quick→Repeat→Timer), then A to throw.
     assert clicks.count(("1", 1)) == 2
     assert clicks[-1][0] == "A"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# clear_rewards — detection-driven post-catch screen clearing
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def test_clear_rewards_noops_when_already_overworld():
+    io, clicks = make_io(in_overworld=lambda: True)
+    assert A.clear_rewards(AttackerConfig(), io) is True
+    assert clicks == []          # already home → pressed nothing
+
+
+def test_clear_rewards_advances_rewards_then_message_to_overworld():
+    # Rewards result (Next) x2 → Pokédex message box → overworld.
+    screens = ["rewards", "rewards", "text", "overworld"]
+    i = {"k": 0}
+
+    def cur():
+        return screens[min(i["k"], len(screens) - 1)]
+
+    io, clicks = make_io(
+        in_overworld=lambda: cur() == "overworld",
+        at_rewards=lambda: cur() == "rewards",
+        at_text_box=lambda: cur() == "text",
+    )
+    base = io.click
+
+    def click(tok, sleep=0.0, repeat=1):
+        base(tok, sleep, repeat)
+        i["k"] += 1              # each confirm advances to the next screen
+    io.click = click
+
+    assert A.clear_rewards(AttackerConfig(), io) is True
+    assert clicks.count(("A", 1)) == 3   # 2 Rewards 'Next' + 1 message advance
 
 
 def test_catch_throws_default_when_carousel_never_appears():
