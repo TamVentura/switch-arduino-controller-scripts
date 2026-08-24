@@ -200,11 +200,24 @@ def get_mode():
         if text_box_mode == "input":
             return Mode.QUESTION_INPUT
 
+        # The "press to continue" arrow (▼) comes in two variants: a dark ▼ on a
+        # light box (text_box_white_continue.png) and a light ▼ on a dark box
+        # (text_box_black_continue.png, e.g. the post-catch Pokédex "sent to Boxes"
+        # box). Match EITHER, over a scale range — the reference arrows are rendered
+        # a touch larger than the live 1080p frame, so the black arrow only matches
+        # at ~0.75 (confirmed live 2026-08-24: black 0.99 @0.75, white 0.71).
+        _arrow = capture.get_frame_region(2700, 1800, 2900, 1960)
+        _arrow_scales = (0.5, 0.75, 1.0, 1.3)
         if template_matcher.find_all(
-            capture.get_frame_region(2758, 1831, 2839, 1932),
+            _arrow,
             get_file_relative_path("../reference_images/text_box_white_continue.png"),
-            threshold=0.94,
-            scales=(1,),
+            threshold=0.9,
+            scales=_arrow_scales,
+        ) or template_matcher.find_all(
+            _arrow,
+            get_file_relative_path("../reference_images/text_box_black_continue.png"),
+            threshold=0.9,
+            scales=_arrow_scales,
         ):
             return Mode.TEXT_BOX_CONTINUE
         else:
