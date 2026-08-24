@@ -29,6 +29,7 @@ class Mode(Enum):
     TEXT_BOX_CONTINUE = 15
     QUESTION_INPUT = 16
     MAP = 17
+    POKE_PORTAL = 18
 
 
 class MenuOption(IntEnum):
@@ -300,6 +301,8 @@ def get_mode():
         > 0.9
     ):
         return Mode.HOME_MENU
+    elif get_portal_option(capture.get_latest_frame()) != PortalOption.ERROR:
+        return Mode.POKE_PORTAL
     elif _is_minimap_in_corner():
         return Mode.IN_GAME
     elif _in_battle():

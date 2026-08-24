@@ -18,10 +18,12 @@ from switch import *
 # Added imports for vision utilities and configuration
 from utils.pokemon_sv import (
     get_mode,
+    Mode,
     MenuOption,
     goto_menu_option,
     PortalOption,
     goto_portal_option,
+    get_portal_option,
 )
 from colorama import Fore, Style
 
@@ -166,24 +168,88 @@ def type_link_code_numeric(code: str, step: float = 0.12) -> None:
     click("+", sleep=2.0)                   # OK — confirms the code AND searches
 
 
-def enter_tera_raid_lobby(code: str) -> None:
-    """Join the host's Tera Raid lobby on Switch 2: Main Menu → Poké Portal → Tera
-    Raid Battle → Link Code keypad → type `code` → search → confirm 'Ready!'.
+# 4K gold strip that reads ~100% #ffe300 ONLY when the joined raid lobby is showing
+# with "All ready to go!" highlighted. Calibrated live 2026-08-22: lobby=1.0, Poké
+# Portal=0.0, Tera Raid Battle Search=0.0 — a clean few-pixels separator.
+_READY_BAR_REGION = (1200, 620, 1780, 720)
 
-    Both menu hops are vision-driven (detect the current highlight, move by the
-    delta): goto_menu_option for the main menu, goto_portal_option for the Poké
-    Portal submenu — so it works regardless of where each cursor last sat."""
-    print(f"{Fore.CYAN}[FARMER]{Style.RESET_ALL} Main Menu -> Poke Portal -> Tera Raid Battle...")
 
-    # 1. Main Menu → Poké Portal (dynamic).
+def at_raid_lobby(frame=None) -> bool:
+    """True when we have actually joined the host's raid lobby ('All ready to go!'
+    highlighted). Used to time the ready-confirm press and to prove the join
+    succeeded before telling the host to start."""
     try:
-        print(f"{Fore.LIGHTBLUE_EX}[VISION]{Style.RESET_ALL} Current Game Mode: {get_mode()}")
-        goto_menu_option(MenuOption.PORTAL)
-    except Exception as e:
-        print(f"{Fore.YELLOW}[WARN]{Style.RESET_ALL} goto_menu_option fallback: {e}")
-        click("B", sleep=0.5, repeat=2)
-        click("X", sleep=1.5)
-    click("A", sleep=3.5)                    # open the Poké Portal
+        return capture.region_color_ratio(
+            *_READY_BAR_REGION, "#ffe300", tolerance=80, frame=frame) >= 0.6
+    except Exception:
+        return False
+
+
+def _ensure_in_poke_portal(max_tries: int = 12) -> bool:
+    """Get into the Poké Portal from wherever the game currently is, WITHOUT ever
+    pressing HOME (except to leave the Switch HOME menu). We may already be in the
+    portal — or stranded on a portal sub-screen (e.g. the Tera Raid Battle Search
+    card) from a previous attempt — in which case opening the main menu is wrong.
+
+    Decision each iteration (get_portal_option != ERROR means the portal is open):
+      • portal already open          → done
+      • Switch HOME menu             → H (back into the game)
+      • overworld / main menu        → open the menu, highlight Portal, A to open it
+      • anything else / 'error'      → B, backing out one level toward the overworld
+    """
+    stuck = 0
+    for _ in range(max_tries):
+        time.sleep(0.4)                        # let the screen settle before reading vision
+        if get_portal_option() != PortalOption.ERROR:
+            return True
+        mode = get_mode()
+        print(f"{Fore.LIGHTBLUE_EX}[VISION]{Style.RESET_ALL} Game Mode: {mode}")
+        if mode in (Mode.IN_GAME, Mode.MENU):
+            # Safe to open the main menu here: goto_menu_option only reaches its HOME
+            # fallback when X fails to open the menu, which won't happen from these.
+            stuck = 0
+            goto_menu_option(MenuOption.PORTAL)
+            click("A", sleep=3.0)             # open the Poké Portal
+        elif mode == Mode.HOME_MENU:
+            # This is the "Close Software?" prompt — cancel with B. NEVER press A here
+            # (A would close the game).
+            stuck = 0
+            click("B", sleep=1.5)
+        else:
+            # Unknown/dim/transition, a portal sub-screen (Tera Raid Battle Search,
+            # keypad, a lingering lobby), or the plain Switch HOME screen. Wake +
+            # settle and re-check the portal before acting (a dim portal reads as
+            # ERROR); only then back out a level. If we stay unresolved, we may be
+            # stranded on the Switch HOME menu, where H returns to the game.
+            stuck += 1
+            wake_screen()
+            time.sleep(0.4)
+            if get_portal_option() != PortalOption.ERROR:
+                return True
+            if stuck >= 3:
+                click("H", sleep=2.0)          # escape a possible Switch HOME menu
+                stuck = 0
+            else:
+                click("B", sleep=1.0)          # back out one level toward the overworld
+    return False
+
+
+def enter_tera_raid_lobby(code: str) -> bool:
+    """Join the host's Tera Raid lobby on Switch 2: (reach) Poké Portal → Tera Raid
+    Battle → Link Code keypad → type `code` → search → confirm 'All ready to go!'.
+
+    Portal-aware: if we are already in the Poké Portal (or one of its sub-screens)
+    we do NOT go back through the main menu — see _ensure_in_poke_portal.
+
+    Returns True only once we are confirmed inside the host's lobby (via at_raid_lobby)
+    and have pressed 'All ready to go!'. Returns False if the join never lands, so the
+    caller can skip signalling the host instead of triggering a solo host battle."""
+    print(f"{Fore.CYAN}[FARMER]{Style.RESET_ALL} Reaching Poke Portal -> Tera Raid Battle...")
+
+    # 1. Get into the Poké Portal from any starting screen (never presses HOME).
+    if not _ensure_in_poke_portal():
+        print(f"{Fore.YELLOW}[WARN]{Style.RESET_ALL} could not confirm the Poké Portal is open; "
+              "continuing best-effort")
 
     # 2. Poké Portal → Tera Raid Battle (dynamic).
     if not goto_portal_option(PortalOption.TERA_RAID):
@@ -194,15 +260,25 @@ def enter_tera_raid_lobby(code: str) -> None:
     # 3. Open the Link Code keypad ('Link Code' card is pre-selected).
     click("A", sleep=1.5)
 
-    # 4. Type the code and confirm — '+' also starts the search.
+    # 4. Type the code — '+' also fires the search.
     type_link_code_numeric(code)
 
-    # 5. Enter the lobby and confirm 'Ready!'. The search is already running; a real
-    #    host raid transitions into the lobby, where A advances into it and confirms
-    #    readiness. (The attacker macro then detects battle-start via vision.)
-    print(f"{Fore.CYAN}[FARMER]{Style.RESET_ALL} Confirming 'Ready!' in raid lobby...")
-    click("A", sleep=3.0)
-    click("A", sleep=1.5)
+    # 5. Wait for the join to actually land (the lobby screen appears) before pressing
+    #    'All ready to go!'. Pressing A blindly during the search/join transition
+    #    misses the lobby and leaves us un-readied, so poll for the lobby (up to ~20s)
+    #    and confirm with a single A only once it is on screen.
+    deadline = time.time() + 20.0
+    while time.time() < deadline:
+        if at_raid_lobby():
+            print(f"{Fore.LIGHTGREEN_EX}[FARMER]{Style.RESET_ALL} Lobby joined — "
+                  "confirming 'All ready to go!'")
+            click("A", sleep=1.5)
+            return True
+        time.sleep(0.4)
+
+    print(f"{Fore.YELLOW}[WARN]{Style.RESET_ALL} raid lobby not detected after entering "
+          "the code — join failed (code may be stale or the search missed it)")
+    return False
 
 
 def handle_battle_and_rewards(
@@ -288,21 +364,9 @@ def _calib_frame_dumper(interval: float = 0.6, dedup_max_diff: float = 8.0) -> N
             os.replace(tmp, _CALIB_LIVE)
         except Exception:
             pass
-        try:
-            is_new = last_archived is None or not template_matcher.fast_equals(
-                frame, last_archived, max_diff=dedup_max_diff)
-        except Exception:
-            is_new = False
-        if is_new:
-            fn = os.path.join(
-                _CALIB_DIR,
-                time.strftime("%H%M%S") + f"_{int(time.time() * 1000) % 1000:03d}.png",
-            )
-            try:
-                cv2.imwrite(fn, frame)
-                last_archived = frame.copy()
-            except Exception:
-                pass
+        # Archiving distinct frames floods calib_frames/ with junk; keep only the
+        # single overwritten live.png. (Re-enable the archive block if you need a
+        # scrollback of distinct screens.)
         time.sleep(interval)
 
 
@@ -312,6 +376,24 @@ def _start_calib_frame_dumper() -> None:
     ).start()
     print(f"{Fore.LIGHTBLACK_EX}[TEMP-CALIB]{Style.RESET_ALL} live frame -> {_CALIB_LIVE}")
 # ── END TEMP-CALIB ───────────────────────────────────────────────────────────
+
+
+def wake_screen():
+    """Wake the Switch 2 screen from its inactivity dim before any vision runs.
+
+    After a while without input the Switch dims the display, which wrecks every
+    vision detection (is_in_world, menu option, selected move, etc.). A brief
+    right-stick nudge only rotates the overworld camera — an idempotent, harmless
+    action — so it is safe to fire before each raid entry to guarantee a bright
+    frame. Sign of the Y axis is irrelevant: the right stick never affects state.
+    """
+    try:
+        set_right_stick(0.0, 1.0)
+        time.sleep(0.12)
+        set_right_stick(0.0, 0.0)
+        time.sleep(0.25)  # let the panel finish brightening before we look
+    except Exception as exc:  # never let a wake nudge kill the run
+        print(f"{Fore.YELLOW}[WAKE]{Style.RESET_ALL} nudge failed: {exc}")
 
 
 def main():
@@ -362,8 +444,16 @@ def main():
             herba = raid.get("herba_drops", {})
             print(f"  🍃 Herba Drops: {herba.get('total')} total {herba}")
 
-        # 1. Enter Lobby on Switch 2 via Joycon
-        enter_tera_raid_lobby(code)
+        # 0. Wake the screen — it may have dimmed while we waited for the push.
+        #    Must run before any vision (menu nav inside enter_tera_raid_lobby).
+        wake_screen()
+
+        # 1. Enter Lobby on Switch 2 via Joycon. Only proceed if we actually joined —
+        #    otherwise signalling the host would make it fight the raid solo.
+        if not enter_tera_raid_lobby(code):
+            print(f"{Fore.YELLOW}[SKIP]{Style.RESET_ALL} Did not join lobby [{code}]; "
+                  "waiting for the host to re-host a fresh lobby.")
+            continue
 
         # 2. Signal Host to start battle immediately (one-shot POST, not polling)
         print(f"{Fore.CYAN}[API]{Style.RESET_ALL} Notifying Host (Switch 1) that Farmer is ready...")

@@ -176,27 +176,29 @@ def real_io(battle_state_fn: Optional[Callable[[], Optional[bool]]] = None) -> B
 
 
 def boss_defeated(io: BattleIO) -> bool:
-    """True when the boss is down. Host flag is authoritative when available
-    (in_battle == False); otherwise fall back to vision battle_ended().
+    """True when the boss is down. **Vision is authoritative — never the host flag.**
+
+    The host only exposes an ambiguous scene byte that reads "in battle" all the
+    way through victory, rewards and the catch screen, so it cannot distinguish
+    boss-alive from boss-dead; on a loss it would also report a false win. We
+    therefore decide purely from what is on screen (battle_ended()).
 
     Only meaningful AFTER the battle has started (see wait_for_battle_start),
     because battle_ended()'s minimap check is also true in the pre-battle lobby.
     """
-    flag = io.battle_state()
-    if flag is not None:
-        return flag is False
     return io.battle_ended()
 
 
 def wait_for_battle_start(cfg: AttackerConfig, io: BattleIO) -> bool:
-    """Poll until the raid battle actually begins — a command/move menu appears
-    or the host flag reports in_battle. Advances any pre-battle dialogue. Returns
-    False on timeout (nothing to attack)."""
+    """Poll until the raid battle actually begins ON THIS SCREEN — the command or
+    move menu appears (vision). The host flag is deliberately NOT trusted: the host
+    starts its side the instant we POST start_battle whether or not we truly joined
+    the lobby, so a host IN_BATTLE flag does not mean Switch 2 is in the fight.
+    Requiring the actual battle UI makes a failed join time out fast (returns False)
+    instead of flailing through empty turns. Advances any pre-battle dialogue."""
     deadline = io.now() + cfg.battle_start_timeout_sec
     while io.now() < deadline:
         if io.is_command_menu() or io.is_move_select():
-            return True
-        if io.battle_state() is True:
             return True
         if io.at_text_box():
             io.click("A", sleep=0.1)

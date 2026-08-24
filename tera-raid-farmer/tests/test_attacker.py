@@ -70,27 +70,29 @@ def make_io(**overrides):
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def test_boss_defeated_host_flag_in_battle():
-    io, _ = make_io(battle_state=lambda: True)
+def test_boss_defeated_false_while_vision_sees_battle():
+    # Vision is authoritative: no end-screen visible → still fighting.
+    io, _ = make_io(battle_ended=lambda: False)
     assert A.boss_defeated(io) is False
 
 
-def test_boss_defeated_host_flag_not_in_battle():
-    io, _ = make_io(battle_state=lambda: False)
+def test_boss_defeated_true_when_vision_sees_end():
+    io, _ = make_io(battle_ended=lambda: True)
     assert A.boss_defeated(io) is True
 
 
-def test_boss_defeated_falls_back_to_vision_when_host_unknown():
-    io, _ = make_io(battle_state=lambda: None, battle_ended=lambda: True)
-    assert A.boss_defeated(io) is True
-    io2, _ = make_io(battle_state=lambda: None, battle_ended=lambda: False)
-    assert A.boss_defeated(io2) is False
+def test_boss_defeated_ignores_host_flag():
+    # The host flag is deliberately NOT consulted — only vision decides.
+    io, _ = make_io(battle_state=lambda: False, battle_ended=lambda: False)
+    assert A.boss_defeated(io) is False
+    io2, _ = make_io(battle_state=lambda: True, battle_ended=lambda: True)
+    assert A.boss_defeated(io2) is True
 
 
-def test_host_flag_wins_over_vision():
-    # Host says still in battle even though vision (minimap) would say ended.
+def test_vision_wins_over_host_flag():
+    # Host flag says still in battle, but vision sees the end screen → boss down.
     io, _ = make_io(battle_state=lambda: True, battle_ended=lambda: True)
-    assert A.boss_defeated(io) is False
+    assert A.boss_defeated(io) is True
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -104,7 +106,7 @@ def test_wait_for_my_turn_returns_turn_on_command_menu():
 
 
 def test_wait_for_my_turn_returns_ended_when_boss_down():
-    io, _ = make_io(battle_state=lambda: False)  # host: not in battle
+    io, _ = make_io(battle_ended=lambda: True)  # vision: end screen visible
     assert A.wait_for_my_turn(AttackerConfig(), io) == "ended"
 
 
@@ -124,7 +126,7 @@ def test_wait_for_my_turn_advances_text_boxes_then_times_out():
 
 def test_wait_for_my_turn_ended_beats_command_menu():
     # If the boss is already down, don't act even if a menu lingers.
-    io, _ = make_io(battle_state=lambda: False, is_command_menu=lambda: True)
+    io, _ = make_io(battle_ended=lambda: True, is_command_menu=lambda: True)
     assert A.wait_for_my_turn(AttackerConfig(), io) == "ended"
 
 
@@ -138,9 +140,12 @@ def test_wait_for_battle_start_on_command_menu():
     assert A.wait_for_battle_start(AttackerConfig(), io) is True
 
 
-def test_wait_for_battle_start_on_host_flag():
+def test_wait_for_battle_start_ignores_host_flag():
+    # Vision-only: a host IN_BATTLE flag with no on-screen battle UI must NOT count
+    # as "battle started" (a failed join should time out, not flail).
+    cfg = AttackerConfig(battle_start_timeout_sec=1.0)
     io, _ = make_io(battle_state=lambda: True)
-    assert A.wait_for_battle_start(AttackerConfig(), io) is True
+    assert A.wait_for_battle_start(cfg, io) is False
 
 
 def test_wait_for_battle_start_times_out():
@@ -308,7 +313,7 @@ def test_take_turn_returns_false_when_menu_never_opens():
 
 
 def test_take_turn_stops_if_boss_already_defeated():
-    io, _ = make_io(battle_state=lambda: False)  # host: boss down
+    io, _ = make_io(battle_ended=lambda: True)  # vision: boss down
     assert A.take_turn(2, want_tera=False, cfg=AttackerConfig(), io=io) is True
 
 
