@@ -160,6 +160,26 @@ def _run_command(line: str) -> bool:
             import main as farmer_main
             farmer_main.enter_tera_raid_lobby(code)
             _log("enter_tera_raid_lobby returned")
+        elif cmd == "detect":
+            # Run the real catch/battle detectors against the CURRENT frame and log
+            # the verdict. Read-only — presses nothing. TEMP calibration aid.
+            import attacker as _attacker
+            import pokemon_sv as _psv
+            io = _attacker.real_io()
+            try:
+                mode = _psv.get_mode()
+            except Exception as e:  # noqa: BLE001
+                mode = f"ERR {e}"
+            _save_shot("detect")
+            _log(
+                "detect: "
+                f"at_ball_select={io.at_ball_select()} "
+                f"ball_name={io.read_ball_name()!r} "
+                f"battle_ended={io.battle_ended()} "
+                f"is_command_menu={io.is_command_menu()} "
+                f"is_move_select={io.is_move_select()} "
+                f"mode={mode}"
+            )
         elif cmd == "stop":
             _log("stop requested")
             return False

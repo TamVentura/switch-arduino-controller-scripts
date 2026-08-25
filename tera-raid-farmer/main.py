@@ -28,7 +28,7 @@ from utils.pokemon_sv import (
 from colorama import Fore, Style
 
 # Vision-driven Iron Hands attacker macro (Switch 2 is now the ATTACKER).
-from attacker import AttackerConfig, run_attacker_macro, catch_pokemon
+from attacker import AttackerConfig, run_attacker_macro, catch_pokemon, clear_rewards
 # Event-driven link to the host over its /ws push (replaces all HTTP polling).
 from host_link import HostLink
 
@@ -69,11 +69,11 @@ def load_config() -> dict:
         # ── Iron Hands attacker macro (Switch 2 is now the ATTACKER) ──
         "belly_drum_slot": 1,       # move-slot of Belly Drum (turn 1, once)
         "drain_punch_slot": 2,      # move-slot of Drain Punch (turn 2+, loop)
-        "use_tera": True,           # Terastallize (Fighting) from turn 2
+        "use_tera": False,           # Terastallize (Fighting) from turn 2
         "tera_button": "R",         # controller token for Terastal
         "combat_max_turns": 50,     # safety cap against an infinite loop
-        "turn_poll_timeout_sec": 20,   # max wait for "it's my turn" per turn
-        "battle_start_timeout_sec": 45,  # max wait for the battle to begin
+        "turn_poll_timeout_sec": 30,   # max wait for "it's my turn" per turn
+        "battle_start_timeout_sec": 200,  # max wait for the battle to begin
         # Delay (s) between button presses while navigating the Fight/move menus.
         # NEEDS LIVE CALIBRATION on the real Switch 2 capture feed.
         "move_select_delay_sec": 0.6,
@@ -130,6 +130,25 @@ def type_link_code_numeric(code: str, step: float = 0.12) -> None:
     (reached by Down-to-bottom, left by Up back into the grid → '8')."""
     print(f"{Fore.YELLOW}[JOYCON]{Style.RESET_ALL} Typing numeric Link Code "
           f"[{Fore.GREEN}{code}{Style.RESET_ALL}] on the Switch 2 keypad...")
+
+    # TEMP-CALIB: screenshot before every INDIVIDUAL keypress (each `repeat` is
+    # split into single presses purely so each frame is captured — same presses,
+    # same timing). Lets us see frame-by-frame whether a D-pad press moves one cell
+    # or overshoots. Delete `c()` + _kp_* with the TEMP-CALIB block.
+    _kp_reset()
+
+    def c(token, sleep=step, repeat=1):
+        for _ in range(repeat):
+            _kp_shot(f"{ch}_{token}")
+            if token in ("1", "2", "3", "4"):
+                # Short D-pad tap: a normal click holds ~0.2s, long enough for the
+                # keypad's auto-repeat to fire and skip a cell (double-step). A 50ms
+                # tap moves exactly one cell (validated live 2026-08-24, same as the
+                # ball carousel). A/+ stay as discrete clicks.
+                hold_for(token, 0.05, sleep=sleep)
+            else:
+                click(token, sleep=sleep)
+
     cur_r, cur_c = 0, 0  # keypad always opens on '1'
 
     for ch in str(code):
@@ -139,7 +158,7 @@ def type_link_code_numeric(code: str, step: float = 0.12) -> None:
 
         # Leaving the lone '0' cell first: step Up into the 3×3 grid (0 → 8).
         if (cur_r, cur_c) == (3, 1) and (tr, tc) != (3, 1):
-            click("4", sleep=step)          # Up
+            c("4")                          # Up
             cur_r, cur_c = 2, 1
 
         if (tr, tc) == (3, 1):
@@ -148,24 +167,26 @@ def type_link_code_numeric(code: str, step: float = 0.12) -> None:
             if (cur_r, cur_c) != (3, 1):
                 dc = 1 - cur_c
                 if dc:
-                    click("1" if dc > 0 else "3", sleep=step, repeat=abs(dc))
-                click("2", sleep=step, repeat=3)   # Down → '0'
+                    c("1" if dc > 0 else "3", repeat=abs(dc))
+                c("2", repeat=3)            # Down → '0'
                 cur_r, cur_c = 3, 1
         else:
             # Column first (stays in rows 0-2), then row — never enters row 3, and
             # each step moves toward the target so we never press past an edge.
             dc = tc - cur_c
             if dc:
-                click("1" if dc > 0 else "3", sleep=step, repeat=abs(dc))
+                c("1" if dc > 0 else "3", repeat=abs(dc))
             dr = tr - cur_r
             if dr:
-                click("2" if dr > 0 else "4", sleep=step, repeat=abs(dr))
+                c("2" if dr > 0 else "4", repeat=abs(dr))
             cur_r, cur_c = tr, tc
 
-        click("A", sleep=step)              # enter the digit; cursor stays
+        c("A")                              # enter the digit; cursor stays
 
     time.sleep(0.2)
+    _kp_shot("plus_OK")
     click("+", sleep=2.0)                   # OK — confirms the code AND searches
+    _kp_shot("after_search")
 
 
 # 4K gold strip that reads ~100% #ffe300 ONLY when the joined raid lobby is showing
@@ -324,15 +345,15 @@ def handle_battle_and_rewards(
     else:
         print(f"{Fore.GREEN}[REWARDS]{Style.RESET_ALL} Herba mode — collecting rewards (no catch)...")
 
-    # 4. Reuse the existing reward-mash / drop-loot-screens logic.
+    # 4. Clear the reward + summary screens by DETECTION (Rewards-label OCR +
+    #    text-box/continue-arrow advance) instead of blind mashing — it stops the
+    #    instant the overworld minimap is back. (rewards_mash kept for signature compat.)
     print(f"{Fore.GREEN}[REWARDS]{Style.RESET_ALL} Clearing reward and summary screens...")
-    for _ in range(rewards_mash):
-        click("A", sleep=0.1)
-        click("B", sleep=0.1)
+    clear_rewards(attacker_cfg)
 
-    # 5. Return cleanly to overworld.
-    time.sleep(1.0)
-    click("B", sleep=0.2, repeat=3)
+    # 5. Safety net: a few B presses in case a stray prompt lingers past the clear.
+    #time.sleep(0.5)
+    #click("B", sleep=0.2, repeat=3)
     print(f"{Fore.GREEN}[SUCCESS]{Style.RESET_ALL} Rewards collected! Ready for next cycle.")
 
 
@@ -345,6 +366,35 @@ def handle_battle_and_rewards(
 # ─────────────────────────────────────────────────────────────────────────────
 _CALIB_DIR = os.path.join(os.path.dirname(__file__), "calib_frames")
 _CALIB_LIVE = os.path.join(_CALIB_DIR, "live.png")
+
+# TEMP-CALIB: per-keypress screenshots during link-code entry, so a keypad
+# mis-navigation is visible frame-by-frame. Delete with the TEMP-CALIB block.
+_KP_SHOT_DIR = os.path.join(_CALIB_DIR, "keypad")
+_kp_seq = 0
+
+
+def _kp_reset() -> None:
+    global _kp_seq
+    _kp_seq = 0
+    try:
+        import glob as _g
+        os.makedirs(_KP_SHOT_DIR, exist_ok=True)
+        for _f in _g.glob(os.path.join(_KP_SHOT_DIR, "*.png")):
+            os.remove(_f)
+    except Exception:
+        pass
+
+
+def _kp_shot(tag: str) -> None:
+    global _kp_seq
+    import cv2
+    try:
+        os.makedirs(_KP_SHOT_DIR, exist_ok=True)
+        _kp_seq += 1
+        cv2.imwrite(os.path.join(_KP_SHOT_DIR, f"{_kp_seq:03d}_{tag}.png"),
+                    capture.get_latest_frame())
+    except Exception:
+        pass
 
 
 def _calib_frame_dumper(interval: float = 0.6, dedup_max_diff: float = 8.0) -> None:
@@ -473,6 +523,76 @@ def main():
     host_link.stop()
 
 
+def _battle_test():
+    """TEMP-CALIB: battle test + MANUAL catch checkpoint (delete with the TEMP block).
+
+    Runs the real join+battle autonomously (Test #1: attacker macro), then — instead
+    of auto-catching — hands control to the calib_drive command queue at the
+    post-battle screens so the ball selection can be driven manually (Test #2) WITHOUT
+    ever throwing a ball. Drop command files in calib_frames/q/*.txt; the throw (final
+    A on the ball) is NEVER pressed by this harness — that's the whole point.
+    """
+    def _fn():
+        _start_calib_frame_dumper()
+        config = load_config()
+        host_api = config.get("host_api_url", "http://127.0.0.1:8080")
+        attacker_cfg = AttackerConfig.from_dict(config)
+
+        # Clear any stale queued commands from a previous session so nothing fires
+        # on its own the moment we reach the manual checkpoint.
+        import glob
+        for _stale in glob.glob(os.path.join(_CALIB_DIR, "q", "*.txt")):
+            try:
+                os.remove(_stale)
+            except Exception:
+                pass
+
+        def _hl_log(level, msg):
+            color = Fore.YELLOW if level == "WARNING" else Fore.LIGHTBLUE_EX
+            print(f"{color}[HOST]{Style.RESET_ALL} {msg}")
+
+        host_link = HostLink(host_api, on_log=_hl_log).start()
+        print(f"{Fore.LIGHTCYAN_EX}[BATTLE-TEST]{Style.RESET_ALL} waiting for the host to "
+              f"push a raid lobby ({host_link.ws_url})...")
+
+        # 1. Block until the host pushes a lobby code.
+        code = None
+        while not code and not capture.is_stopped():
+            code = host_link.wait_for_new_lobby(timeout=1.0)
+        if not code:
+            print(f"{Fore.YELLOW}[BATTLE-TEST]{Style.RESET_ALL} capture stopped before a "
+                  "lobby arrived — exiting.")
+            host_link.stop()
+            return
+        print(f"\n{Fore.LIGHTGREEN_EX}🎯 [LOBBY PUSHED] code=[{code}]{Style.RESET_ALL}")
+
+        # 2. Join the lobby (tested-working) — only fight if we truly joined.
+        wake_screen()
+        joined = enter_tera_raid_lobby(code)
+        if joined:
+            print(f"{Fore.CYAN}[BATTLE-TEST]{Style.RESET_ALL} joined — signalling host to start.")
+            signal_host_ready(host_api)
+            # 3. Test #1: the real attacker macro (battle under test).
+            result = run_attacker_macro(attacker_cfg, battle_state_fn=host_link.in_battle)
+            print(f"{Fore.MAGENTA}[BATTLE-TEST]{Style.RESET_ALL} attacker macro done: "
+                  f"win={result.win} reason={result.reason} turns={result.turns}")
+        else:
+            print(f"{Fore.YELLOW}[BATTLE-TEST]{Style.RESET_ALL} join NOT confirmed — NOT "
+                  "signalling the host. Dropping to manual so we can inspect the screen.")
+
+        # 4. Test #2: MANUAL catch checkpoint. No auto-catch, no throw. Hand control to
+        #    the calib_drive file-queue so the ball selection is driven by hand.
+        print(f"{Fore.LIGHTGREEN_EX}[BATTLE-TEST]{Style.RESET_ALL} === MANUAL CATCH CHECKPOINT ===")
+        print(f"  Drop commands in {os.path.join(_CALIB_DIR, 'q')}\\*.txt  "
+              f"(click/hold/sleep/shot/burst/stop). live.png stays fresh.")
+        print(f"  NOTE: this harness NEVER throws the ball on its own — you drive it.")
+        import calib_drive
+        calib_drive._queue_loop()   # returns on 'stop' command or capture stop
+        host_link.stop()
+
+    launch(_fn, debug_regions=_DEBUG_REGIONS)
+
+
 def _test_enter_lobby(code: str):
     """TEMP-CALIB test entrypoint: run the REAL launch() + enter_tera_raid_lobby()
     for a fixed code (no host needed), then keep the window alive so the entry can
@@ -492,5 +612,9 @@ if __name__ == "__main__":
     # TEMP-CALIB: `python main.py --enter 9015` runs only the real lobby-entry flow.
     if len(sys.argv) >= 3 and sys.argv[1] == "--enter":
         _test_enter_lobby(sys.argv[2])
+    # TEMP-CALIB: `python main.py --battle-test` joins the pushed lobby, fights, then
+    # stops at a MANUAL catch checkpoint (no auto-catch / no throw) for the ball test.
+    elif len(sys.argv) >= 2 and sys.argv[1] == "--battle-test":
+        _battle_test()
     else:
         launch(main, debug_regions=_DEBUG_REGIONS)

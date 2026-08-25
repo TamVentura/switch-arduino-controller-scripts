@@ -31,7 +31,6 @@ import time
 from dataclasses import dataclass
 from typing import Callable, Optional
 
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Config + result + IO seam
 # ─────────────────────────────────────────────────────────────────────────────
@@ -40,30 +39,31 @@ from typing import Callable, Optional
 @dataclass
 class AttackerConfig:
     """Combat knobs, loaded from tera-raid-farmer/config.json."""
+
     belly_drum_slot: int = 1
     drain_punch_slot: int = 2
-    use_tera: bool = True
+    use_tera: bool = False
     tera_button: str = "R"
     combat_max_turns: int = 50
     turn_poll_timeout_sec: float = 20.0
     move_select_delay_sec: float = 0.6
     host_api_url: str = "http://127.0.0.1:8080"
     # How long to wait for the battle to actually begin before giving up.
-    battle_start_timeout_sec: float = 45.0
+    battle_start_timeout_sec: float = 200.0
     # Poll cadence while waiting on a state that isn't a text box.
     vision_poll_interval_sec: float = 0.3
     # ── Vision-gated menu navigation (boss-interrupt resilient) ──
     menu_action_timeout_sec: float = 4.0  # per menu-step bound (open list / commit)
-    move_nav_max_steps: int = 6           # cursor steps before giving up a nav attempt
+    move_nav_max_steps: int = 6  # cursor steps before giving up a nav attempt
     # ── Catch (pokemon mode) ──
-    catch_ball: str = "Timer Ball"       # ball to always use when catching
-    catch_timeout_sec: float = 20.0      # max wait for the ball carousel to appear
+    catch_ball: str = "Timer Ball"  # ball to always use when catching
+    catch_timeout_sec: float = 20.0  # max wait for the ball carousel to appear
     # Max right-steps to find the target ball. The carousel is a ring of every ball
     # the player owns (22 live on 2026-08-24), and we only step right, so this must
     # exceed the ring size or a far-side start never reaches the target.
     ball_carousel_max_steps: int = 25
     # Max wait for the post-catch reward/summary screens to clear to the overworld.
-    rewards_clear_timeout_sec: float = 45.0
+    rewards_clear_timeout_sec: float = 90.0
 
     @classmethod
     def from_dict(cls, cfg: dict) -> "AttackerConfig":
@@ -76,23 +76,24 @@ class AttackerConfig:
             turn_poll_timeout_sec=float(cfg.get("turn_poll_timeout_sec", 20.0)),
             move_select_delay_sec=float(cfg.get("move_select_delay_sec", 0.6)),
             host_api_url=str(cfg.get("host_api_url", "http://127.0.0.1:8080")),
-            battle_start_timeout_sec=float(cfg.get("battle_start_timeout_sec", 45.0)),
+            battle_start_timeout_sec=float(cfg.get("battle_start_timeout_sec", 200.0)),
             vision_poll_interval_sec=float(cfg.get("vision_poll_interval_sec", 0.3)),
             menu_action_timeout_sec=float(cfg.get("menu_action_timeout_sec", 4.0)),
             move_nav_max_steps=int(cfg.get("move_nav_max_steps", 6)),
             catch_ball=str(cfg.get("catch_ball", "Timer Ball")),
             catch_timeout_sec=float(cfg.get("catch_timeout_sec", 20.0)),
             ball_carousel_max_steps=int(cfg.get("ball_carousel_max_steps", 25)),
-            rewards_clear_timeout_sec=float(cfg.get("rewards_clear_timeout_sec", 45.0)),
+            rewards_clear_timeout_sec=float(cfg.get("rewards_clear_timeout_sec", 90.0)),
         )
 
 
 @dataclass
 class AttackerResult:
     """Outcome of run_attacker_macro."""
+
     win: bool
-    reason: str          # "boss-defeated" | "lost" | "battle-never-started" |
-                         # "max-turns" (unconfirmed)
+    reason: str  # "boss-defeated" | "lost" | "battle-never-started" |
+    # "max-turns" (unconfirmed)
     turns: int = 0
 
     @property
@@ -104,6 +105,7 @@ class AttackerResult:
 @dataclass
 class BattleIO:
     """Injectable seams. Defaults are placeholders; use real_io() for hardware."""
+
     click: Callable[..., None]
     is_command_menu: Callable[[], bool]
     is_move_select: Callable[[], bool]
@@ -151,10 +153,7 @@ def real_io(battle_state_fn: Optional[Callable[[], Optional[bool]]] = None) -> B
 
     def _at_text_box() -> bool:
         try:
-            return pokemon_sv.get_mode() in (
-                pokemon_sv.Mode.TEXT_BOX,
-                pokemon_sv.Mode.TEXT_BOX_CONTINUE,
-            )
+            return pokemon_sv.get_mode() in (pokemon_sv.Mode.TEXT_BOX_CONTINUE,)
         except Exception:
             return False
 
@@ -163,8 +162,10 @@ def real_io(battle_state_fn: Optional[Callable[[], Optional[bool]]] = None) -> B
         # calibrated 2026-08-18: OCR reads "TimerBall" here).
         try:
             import capture
+
             return pokemon_sv.ocr.read_field(
-                capture.get_latest_frame(), 1720, 1476, 2340, 1590)
+                capture.get_latest_frame(), 1720, 1476, 2340, 1590
+            )
         except Exception:
             return ""
 
@@ -178,8 +179,12 @@ def real_io(battle_state_fn: Optional[Callable[[], Optional[bool]]] = None) -> B
         # ~0 elsewhere. It partially overlaps the command menu's gold "Battle" button,
         # so boss_defeated() gates this with `not is_command_menu()`.
         try:
-            return capture.region_color_ratio(
-                3100, 1780, 3740, 1880, "#ffe300", tolerance=80) >= 0.5
+            return (
+                capture.region_color_ratio(
+                    3100, 1780, 3740, 1880, "#ffe300", tolerance=80
+                )
+                >= 0.5
+            )
         except Exception:
             return False
 
@@ -191,8 +196,12 @@ def real_io(battle_state_fn: Optional[Callable[[], Optional[bool]]] = None) -> B
         # OCR the raid-result "Rewards" label (top-left of the result screen).
         # Calibrated live 2026-08-24: reads "Rewards" at this 4K region.
         try:
-            return "reward" in pokemon_sv.ocr.read_field(
-                capture.get_latest_frame(), 296, 464, 556, 544).lower()
+            return (
+                "reward"
+                in pokemon_sv.ocr.read_field(
+                    capture.get_latest_frame(), 296, 464, 556, 544
+                ).lower()
+            )
         except Exception:
             return False
 
@@ -309,9 +318,9 @@ def open_move_list(cfg: AttackerConfig, io: BattleIO) -> bool:
         if io.is_command_menu():
             io.click("A", sleep=cfg.move_select_delay_sec)  # Battle → open move list
         elif io.at_text_box():
-            io.click("A", sleep=0.1)                        # advance pre-turn dialogue
+            io.click("A", sleep=0.1)  # advance pre-turn dialogue
         else:
-            io.sleep(cfg.vision_poll_interval_sec)          # boss animating; wait
+            io.sleep(cfg.vision_poll_interval_sec)  # boss animating; wait
     return io.is_move_select()
 
 
@@ -325,11 +334,13 @@ def goto_move_slot(slot: int, cfg: AttackerConfig, io: BattleIO) -> bool:
     for _ in range(cfg.move_nav_max_steps):
         cur = io.get_move_slot()
         if cur == 0:
-            return False                       # list gone (boss acted) — caller re-opens
+            return False  # list gone (boss acted) — caller re-opens
         if cur == slot:
             return True
         move = slot - cur
-        io.click("2" if move > 0 else "4", sleep=cfg.move_select_delay_sec, repeat=abs(move))
+        io.click(
+            "2" if move > 0 else "4", sleep=cfg.move_select_delay_sec, repeat=abs(move)
+        )
     return io.get_move_slot() == slot
 
 
@@ -347,9 +358,9 @@ def commit_move(cfg: AttackerConfig, io: BattleIO) -> bool:
     deadline = io.now() + cfg.menu_action_timeout_sec
     while io.now() < deadline:
         if io.is_command_menu():
-            return False                       # bounced to command menu — didn't commit
+            return False  # bounced to command menu — didn't commit
         if not io.is_move_select():
-            return True                        # into resolution/waiting — committed
+            return True  # into resolution/waiting — committed
         io.sleep(cfg.vision_poll_interval_sec)
     return not io.is_move_select() and not io.is_command_menu()
 
@@ -371,15 +382,15 @@ def take_turn(slot: int, want_tera: bool, cfg: AttackerConfig, io: BattleIO) -> 
     deadline = io.now() + cfg.menu_action_timeout_sec * 4  # whole-turn budget
     while io.now() < deadline:
         if boss_defeated(io):
-            return True                        # nothing left to do
+            return True  # nothing left to do
         if not open_move_list(cfg, io):
-            continue                           # boss acting / no menu yet — reassess
+            continue  # boss acting / no menu yet — reassess
         if want_tera and cfg.use_tera and io.tera_available():
-            try_tera(cfg, io)                  # R → Terastallize (stays in list; best-effort)
+            try_tera(cfg, io)  # R → Terastallize (stays in list; best-effort)
         if not goto_move_slot(slot, cfg, io):
-            continue                           # list dismissed mid-nav — reassess
+            continue  # list dismissed mid-nav — reassess
         if commit_move(cfg, io):
-            return True                        # action locked in
+            return True  # action locked in
         # commit didn't take (boss interrupt) — loop and reassess
     return False
 
@@ -422,15 +433,20 @@ def catch_pokemon(cfg: AttackerConfig, io: Optional[BattleIO] = None) -> bool:
     target = _norm(cfg.catch_ball)
     for _ in range(cfg.ball_carousel_max_steps):
         name = _norm(io.read_ball_name())
-        if target and (target in name or difflib.SequenceMatcher(None, name, target).ratio() > 0.7):
+        if target and (
+            target in name or difflib.SequenceMatcher(None, name, target).ratio() > 0.7
+        ):
             log("CATCH", f"ball selected: {cfg.catch_ball}")
-            io.click("A", sleep=d)      # throw
+            io.click("A", sleep=d)  # throw
             return True
-        io.tap("1", sleep=d)            # D-Pad Right → next ball (short tap: one ball,
+        io.tap("1", sleep=d)  # D-Pad Right → next ball (short tap: one ball,
         #                                 a 0.2s click auto-repeats and skips one)
 
-    log("WARNING", f"'{cfg.catch_ball}' not found in {cfg.ball_carousel_max_steps} "
-                   "steps — throwing the current ball")
+    log(
+        "WARNING",
+        f"'{cfg.catch_ball}' not found in {cfg.ball_carousel_max_steps} "
+        "steps — throwing the current ball",
+    )
     io.click("A", sleep=d)
     return False
 
@@ -451,13 +467,12 @@ def clear_rewards(cfg: AttackerConfig, io: Optional[BattleIO] = None) -> bool:
     log = _logger()
     deadline = io.now() + cfg.rewards_clear_timeout_sec
     while io.now() < deadline:
-        if io.in_overworld():
-            log("OK", "post-battle screens cleared — back in the overworld")
-            return True
         if io.at_text_box():
-            io.click("A", sleep=0.4)          # advance a message / continue arrow
+            time.sleep(1)  # wait for the continue arrow to appear (animation)
+            io.click("A", sleep=0.4)  # advance a message / continue arrow
+            return True
         elif io.at_rewards():
-            io.click("A", sleep=0.5)          # 'Next' through the Rewards result
+            io.click("A", sleep=0.5)  # 'Next' through the Rewards result
         else:
             io.sleep(cfg.vision_poll_interval_sec)  # catch animation / "Communicating…"
     log("WARNING", "post-battle clear timed out before reaching the overworld")
@@ -469,9 +484,11 @@ def clear_rewards(cfg: AttackerConfig, io: Optional[BattleIO] = None) -> bool:
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def run_attacker_macro(cfg: AttackerConfig, io: Optional[BattleIO] = None,
-                       battle_state_fn: Optional[Callable[[], Optional[bool]]] = None
-                       ) -> AttackerResult:
+def run_attacker_macro(
+    cfg: AttackerConfig,
+    io: Optional[BattleIO] = None,
+    battle_state_fn: Optional[Callable[[], Optional[bool]]] = None,
+) -> AttackerResult:
     """Run the full Iron Hands attacker macro for one raid. See module docstring
     for the combat contract.
 
@@ -497,7 +514,9 @@ def run_attacker_macro(cfg: AttackerConfig, io: Optional[BattleIO] = None,
         return AttackerResult(win=False, reason="lost", turns=0)
     if r == "turn":
         log("BATTLE", f"Turn 1: Belly Drum (slot {cfg.belly_drum_slot})")
-        take_turn(cfg.belly_drum_slot, want_tera=False, cfg=cfg, io=io)  # never Tera turn 1
+        take_turn(
+            cfg.belly_drum_slot, want_tera=False, cfg=cfg, io=io
+        )  # never Tera turn 1
     else:  # timeout on turn 1 — re-check, then fall through to the Drain Punch loop
         log("WARNING", "turn 1 timed out waiting for the command menu")
         if boss_defeated(io):
@@ -527,14 +546,20 @@ def run_attacker_macro(cfg: AttackerConfig, io: Optional[BattleIO] = None,
 
         # It's my turn: Drain Punch, Terastallizing (from turn 2) if the prompt is
         # up. take_turn checks tera_available inside the move list and presses R.
-        log("BATTLE", f"Turn {turn}: Drain Punch (slot {cfg.drain_punch_slot})"
-                      + (" + Tera" if cfg.use_tera else ""))
+        log(
+            "BATTLE",
+            f"Turn {turn}: Drain Punch (slot {cfg.drain_punch_slot})"
+            + (" + Tera" if cfg.use_tera else ""),
+        )
         take_turn(cfg.drain_punch_slot, want_tera=True, cfg=cfg, io=io)
         turn += 1
 
     # 4. Safety cap reached while still in battle.
-    log("WARNING", f"safety cap ({cfg.combat_max_turns} turns) reached — boss NOT "
-                    "confirmed dead; not faking victory")
+    log(
+        "WARNING",
+        f"safety cap ({cfg.combat_max_turns} turns) reached — boss NOT "
+        "confirmed dead; not faking victory",
+    )
     return AttackerResult(win=False, reason="max-turns", turns=cfg.combat_max_turns)
 
 
@@ -546,15 +571,21 @@ def run_attacker_macro(cfg: AttackerConfig, io: Optional[BattleIO] = None,
 def _logger():
     try:
         from colorama import Fore, Style
+
         colors = {
-            "OK": Fore.GREEN, "BATTLE": Fore.MAGENTA,
-            "WARNING": Fore.YELLOW, "INFO": Fore.CYAN,
+            "OK": Fore.GREEN,
+            "BATTLE": Fore.MAGENTA,
+            "WARNING": Fore.YELLOW,
+            "INFO": Fore.CYAN,
         }
 
         def log(level: str, msg: str) -> None:
             c = colors.get(level, "")
             print(f"{c}[{level}]{Style.RESET_ALL} {msg}")
+
     except Exception:
+
         def log(level: str, msg: str) -> None:
             print(f"[{level}] {msg}")
+
     return log
