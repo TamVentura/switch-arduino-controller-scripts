@@ -217,6 +217,127 @@ def run_combo(counts):
             click("B", 3)
 
 
+def parse_script(content):
+    """Parse a full recipe script into ordered (repeat, recipes) segments.
+
+    Understands one or more `loop <n> ... endloop` blocks and loose recipe
+    lines (run once), in any order — so a whole block (or several, like the
+    recipes/*.txt files) can be pasted at once. Reuses parse_recipes for the
+    per-line date+count parsing.
+    """
+    segments = []
+    lines = content.splitlines()
+    loose = []
+
+    def flush_loose():
+        if loose:
+            recs = parse_recipes("\n".join(loose))
+            if recs:
+                segments.append((1, recs))
+            loose.clear()
+
+    i, n = 0, len(lines)
+    while i < n:
+        raw = lines[i].strip()
+        i += 1
+        if not raw:
+            continue
+        low = raw.lower()
+        if low == "loop":
+            flush_loose()
+            # Next non-empty line is the repeat count.
+            repeat = None
+            while i < n:
+                cand = lines[i].strip()
+                i += 1
+                if not cand:
+                    continue
+                try:
+                    repeat = int(cand)
+                except ValueError:
+                    print(f"{Fore.RED}Invalid loop count:{Style.RESET_ALL} {cand}")
+                break
+            # Body runs until endloop (or end of input, if it was omitted).
+            body = []
+            while i < n:
+                cand = lines[i].strip()
+                i += 1
+                if cand.lower() == "endloop":
+                    break
+                if cand:
+                    body.append(cand)
+            if repeat is not None:
+                recs = parse_recipes("\n".join(body))
+                if recs:
+                    segments.append((repeat, recs))
+        elif low == "endloop":
+            continue  # stray endloop — ignore
+        else:
+            loose.append(raw)
+
+    flush_loose()
+    return segments
+
+
+def _drain_console_lines(initial_wait=0.2, settle=0.06):
+    """Read any console lines already buffered from a multi-line paste.
+
+    input() only returns the first pasted line; the rest sit in the Windows
+    console buffer. This consumes them (so they aren't discarded by the
+    notifier's flush_input on the next prompt) and returns them as a list of
+    strings. Empty when nothing is pending (e.g. a single line typed by hand).
+    """
+    try:
+        import msvcrt
+    except ImportError:
+        return []
+    collected = []
+    buf = ""
+    prev = ""
+    deadline = time.time() + initial_wait
+    while True:
+        if msvcrt.kbhit():
+            ch = msvcrt.getwch()
+            if ch in ("\r", "\n"):
+                if ch == "\n" and prev == "\r":
+                    prev = ch
+                    continue
+                collected.append(buf)
+                buf = ""
+            elif ch == "\x03":  # Ctrl-C
+                raise KeyboardInterrupt
+            elif ch in ("\b", "\x7f"):
+                buf = buf[:-1]
+            else:
+                buf += ch
+            prev = ch
+            deadline = time.time() + settle  # keep draining while chars arrive
+        elif time.time() >= deadline:
+            break
+        else:
+            time.sleep(0.005)
+    if buf:
+        collected.append(buf)
+    return collected
+
+
+def run_recipes(recipes):
+    """Run one pass over a list of parsed recipes. Stops early if requested."""
+    for (year, month, day, hour, minute, second), counts in recipes:
+        click("A", 2)
+        click("A", 1)
+        if capture.is_stopped():
+            return
+        gotoDateSettings()
+        set_date(day, month, year, hour, minute)
+        afterDateSettings(second)
+        time.sleep(3)
+        if len(counts) == 1:
+            run_regular(counts[0])
+        else:
+            run_combo(counts)
+
+
 def manip():
     while not capture.is_stopped():
         #INSERTED NOTIFIER HERE
@@ -225,12 +346,18 @@ def manip():
             console_prompt="Recipe: ",
             wait_for_text=True,
         )
-        line = (_r.action_value or "").strip()
-        # line = input("Recipe: ").strip()
-        if not line:
+        first = (_r.action_value or "")
+        # first = input("Recipe: ")
+        # A console paste only hands us its first line here; the rest waits in
+        # the terminal buffer. Drain it now so the whole block is parsed as one.
+        extra = _drain_console_lines()
+
+        stripped = first.strip()
+        if not stripped and not extra:
             continue
 
-        if line.lower() == "loop":
+        if not extra and stripped.lower() == "loop":
+            # Bare `loop` typed by hand → keep the interactive gathering flow.
             #INSERTED NOTIFIER HERE
             _r = notifier.send_and_wait(
                 text="Repeat:",
@@ -253,29 +380,23 @@ def manip():
                     break
                 if l:
                     recipe_lines.append(l)
-            recipes = parse_recipes("\n".join(recipe_lines))
+            segments = [(repeat, parse_recipes("\n".join(recipe_lines)))]
         else:
-            recipes = parse_recipes(line)
-            repeat = 1
+            # Pasted block (loop…endloop, several blocks, or loose recipes),
+            # from the console buffer or a multi-line Telegram message.
+            full = "\n".join([first] + extra)
+            segments = parse_script(full)
 
-        if not recipes:
-            print(f"{Fore.RED}Invalid recipe:{Style.RESET_ALL} {line}")
+        segments = [(r, recs) for r, recs in segments if recs]
+        if not segments:
+            print(f"{Fore.RED}Invalid recipe:{Style.RESET_ALL} {stripped}")
             continue
 
-        for _ in range(repeat):
-            for (year, month, day, hour, minute, second), counts in recipes:
-                click("A", 2)
-                click("A", 1)
+        for repeat, recipes in segments:
+            for _ in range(repeat):
+                run_recipes(recipes)
                 if capture.is_stopped():
                     break
-                gotoDateSettings()
-                set_date(day, month, year, hour, minute)
-                afterDateSettings(second)
-                time.sleep(3)
-                if len(counts) == 1:
-                    run_regular(counts[0])
-                else:
-                    run_combo(counts)
             if capture.is_stopped():
                 break
 
