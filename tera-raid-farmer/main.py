@@ -449,13 +449,21 @@ def handle_battle_and_rewards(
     if result.win:
         print(f"{Fore.GREEN}[BATTLE]{Style.RESET_ALL} Attacker macro finished: "
               f"boss down in {result.turns} turn(s).")
+    elif result.reason == "lost":
+        print(f"{Fore.RED}[BATTLE]{Style.RESET_ALL} Raid LOST after {result.turns} "
+              "turn(s) — the game dropped us back in the overworld with no Catch "
+              "button and no Rewards screen.")
     else:
         print(f"{Fore.YELLOW}[BATTLE]{Style.RESET_ALL} Attacker macro finished WITHOUT a "
               f"confirmed win (reason: {result.reason}). Collecting whatever screens follow.")
 
     # 2. End of raid: catch the Pokémon (always with the configured ball, default
     #    Timer Ball) or just grab rewards.
-    if auto_catch:
+    #
+    #    ONLY on a confirmed win. On a loss there is no Catch button to press: the A
+    #    mashing would land on the overworld (talking to scenery / re-entering a den)
+    #    and signal_caught would burn the host's den_seed for a Pokémon that got away.
+    if auto_catch and result.win:
         print(f"{Fore.GREEN}[CATCH]{Style.RESET_ALL} auto_catch ON — catching with "
               f"{attacker_cfg.catch_ball} (pokemon mode)...")
         catch_pokemon(attacker_cfg)
@@ -463,6 +471,9 @@ def handle_battle_and_rewards(
         if host_api:
             ok = signal_caught(host_api)
             print(f"{Fore.GREEN}[CAUGHT]{Style.RESET_ALL} host notified: {ok}")
+    elif auto_catch:
+        print(f"{Fore.YELLOW}[CATCH]{Style.RESET_ALL} Skipping the catch — no confirmed "
+              f"win ({result.reason}); the host keeps this den_seed for a retry.")
     else:
         print(f"{Fore.GREEN}[REWARDS]{Style.RESET_ALL} Herba mode — collecting rewards (no catch)...")
 
