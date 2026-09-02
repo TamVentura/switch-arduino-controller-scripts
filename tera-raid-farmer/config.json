@@ -1,5 +1,5 @@
 {
-  "host_api_url": "http://127.0.0.1:8080",
+  "host_api_url": "http://127.0.0.1:7193",
   "rewards_mash_count": 25,
   "code_entry_attempts": 3,
   "auto_catch": true,

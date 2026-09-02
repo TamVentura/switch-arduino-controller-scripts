@@ -179,7 +179,7 @@ def run_regular(target_count):
     click("A", 15)
     click("A", 2)
     click("A")
-    capture.wait_for_pixel(78, 2100, "#0254a0")
+    capture.wait_for_pixel(78, 2100, "#0f4f93")
     time.sleep(0.5)
     click("B", 5)
 
