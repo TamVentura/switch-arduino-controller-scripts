@@ -550,8 +550,48 @@ def catch_pokemon(cfg: AttackerConfig, io: Optional[BattleIO] = None) -> bool:
     return False
 
 
-def clear_rewards(cfg: AttackerConfig, io: Optional[BattleIO] = None) -> bool:
-    """Detection-driven clearing of the post-catch screens — replaces blind A/B
+def decline_catch(cfg: AttackerConfig, io: Optional[BattleIO] = None) -> bool:
+    """Answer the post-victory Catch prompt with 'Don't Catch' (Herba mode,
+    auto_catch=false).
+
+    The prompt is a two-option window with 'Catch' pre-selected, so declining is
+    D-Pad **Down** then **A** — exactly on the window that carries the gold Catch
+    button (at_catch_prompt). Without this the macro just walked away and the
+    prompt sat there until it timed out.
+
+    Returns True once the prompt was answered, False if it never showed up (lost
+    raid, or we are already back in the overworld).
+    """
+    if io is None:
+        io = real_io()
+    log = _logger()
+    d = cfg.move_select_delay_sec
+
+    deadline = io.now() + cfg.catch_timeout_sec
+    while io.now() < deadline:
+        if io.at_catch_prompt() and not io.is_command_menu():
+            io.tap("2", sleep=d)  # D-Pad Down → 'Don't Catch' (short tap: one cell)
+            io.click("A", sleep=d)  # confirm
+            log("CATCH", "declined the catch (Don't Catch)")
+            return True
+        # Bail the moment the overworld is back: there is no prompt to answer, so
+        # every further press lands on the world (talking to scenery / a den).
+        if io.in_overworld():
+            log("WARNING", "back in the overworld before the Catch prompt appeared "
+                           "— nothing to decline")
+            return False
+        if io.at_text_box():
+            io.click("A", sleep=0.15)  # advance post-battle text toward the prompt
+        io.sleep(cfg.vision_poll_interval_sec)
+
+    log("WARNING", "Catch prompt never appeared — skipping the decline")
+    return False
+
+
+def clear_rewards(
+    cfg: AttackerConfig, io: Optional[BattleIO] = None, caught: bool = True
+) -> bool:
+    """Detection-driven clearing of the post-battle screens — replaces blind A/B
     mashing.
 
     After the throw the game shows: the catch/"You caught X!" result with its
@@ -560,7 +600,12 @@ def clear_rewards(cfg: AttackerConfig, io: Optional[BattleIO] = None) -> bool:
     message (at_text_box) or Rewards page (at_rewards, OCR of the 'Rewards' label),
     wait out animations / "Communicating…", and stop the instant the minimap is back
     (in_overworld). Bounded by rewards_clear_timeout_sec. Returns True if it reached
-    the overworld."""
+    the overworld.
+
+    caught: False in Herba mode (the catch was declined). The **Rewards page still
+    shows** either way, but the "sent to your Boxes!" continue box only exists when
+    a Pokémon was actually caught — so with caught=False we never treat a text box
+    as the last screen, and run to the overworld instead."""
     if io is None:
         io = real_io()
     log = _logger()
@@ -569,12 +614,16 @@ def clear_rewards(cfg: AttackerConfig, io: Optional[BattleIO] = None) -> bool:
         if io.in_overworld():
             return True  # minimap is back — nothing left to clear (also the whole
             #              story on a lost raid, which lands here already home)
-        if io.at_text_box():
+        if caught and io.at_text_box():
             time.sleep(1)  # wait for the continue arrow to appear (animation)
             io.click("A", sleep=0.4)  # advance a message / continue arrow
-            return True
+            return True  # the "sent to your Boxes!" box is the last screen
         elif io.at_rewards():
             io.click("A", sleep=0.5)  # 'Next' through the Rewards result
+        elif io.at_text_box():
+            # Herba mode: nothing was caught, so no box ends the sequence — just
+            # advance whatever message is up and keep going to the overworld.
+            io.click("A", sleep=0.4)
         else:
             io.sleep(cfg.vision_poll_interval_sec)  # catch animation / "Communicating…"
     log("WARNING", "post-battle clear timed out before reaching the overworld")

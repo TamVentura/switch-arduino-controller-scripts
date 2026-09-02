@@ -29,7 +29,8 @@ from utils.pokemon_sv import (
 from colorama import Fore, Style
 
 # Vision-driven Iron Hands attacker macro (Switch 2 is now the ATTACKER).
-from attacker import AttackerConfig, run_attacker_macro, catch_pokemon, clear_rewards
+from attacker import (AttackerConfig, run_attacker_macro, catch_pokemon,
+                      decline_catch, clear_rewards)
 # Event-driven link to the host over its /ws push (replaces all HTTP polling).
 from host_link import HostLink
 
@@ -475,13 +476,21 @@ def handle_battle_and_rewards(
         print(f"{Fore.YELLOW}[CATCH]{Style.RESET_ALL} Skipping the catch — no confirmed "
               f"win ({result.reason}); the host keeps this den_seed for a retry.")
     else:
-        print(f"{Fore.GREEN}[REWARDS]{Style.RESET_ALL} Herba mode — collecting rewards (no catch)...")
+        print(f"{Fore.GREEN}[REWARDS]{Style.RESET_ALL} Herba mode — declining the catch, "
+              "then collecting rewards...")
+        # The Catch prompt still comes up on a win and must be ANSWERED: Down → A
+        # picks 'Don't Catch'. Walking away leaves it on screen and the rewards
+        # never arrive. Nothing to answer on a loss (no prompt at all).
+        if result.win:
+            decline_catch(attacker_cfg)
 
     # 4. Clear the reward + summary screens by DETECTION (Rewards-label OCR +
     #    text-box/continue-arrow advance) instead of blind mashing — it stops the
     #    instant the overworld minimap is back. (rewards_mash kept for signature compat.)
+    # The Rewards page shows either way; the "sent to your Boxes!" continue box only
+    # exists when a Pokémon was actually caught, so tell clear_rewards which it is.
     print(f"{Fore.GREEN}[REWARDS]{Style.RESET_ALL} Clearing reward and summary screens...")
-    clear_rewards(attacker_cfg)
+    clear_rewards(attacker_cfg, caught=bool(auto_catch and result.win))
 
     # 5. Safety net: a few B presses in case a stray prompt lingers past the clear.
     #time.sleep(0.5)

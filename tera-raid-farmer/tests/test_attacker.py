@@ -527,6 +527,53 @@ def test_clear_rewards_advances_rewards_then_message_to_overworld():
     assert clicks.count(("A", 1)) == 3   # 2 Rewards 'Next' + 1 message advance
 
 
+def test_decline_catch_presses_down_then_a_on_the_prompt():
+    # Herba mode: the Catch prompt is up → Down (D-pad '2') to 'Don't Catch', then A.
+    io, clicks = make_io(at_catch_prompt=lambda: True)
+    assert A.decline_catch(AttackerConfig(), io) is True
+    assert clicks == [("2", 1), ("A", 1)]
+
+
+def test_decline_catch_bails_in_overworld_instead_of_pressing_a():
+    # Lost raid: no prompt, already home → never press anything at the world.
+    io, clicks = make_io(in_overworld=lambda: True)
+    assert A.decline_catch(AttackerConfig(), io) is False
+    assert clicks == []
+
+
+def test_decline_catch_ignores_the_command_menu_gold_button():
+    # at_catch_prompt overlaps the command menu's gold 'Battle' button — mid-battle
+    # that must never be answered as a catch prompt.
+    io, clicks = make_io(at_catch_prompt=lambda: True, is_command_menu=lambda: True)
+    assert A.decline_catch(AttackerConfig(catch_timeout_sec=1.0), io) is False
+    assert clicks == []
+
+
+def test_clear_rewards_without_a_catch_runs_to_the_overworld():
+    # Nothing was caught: the Rewards page still shows, but no 'sent to your Boxes!'
+    # box ends the sequence — the clear must keep going until the minimap is back.
+    screens = ["rewards", "text", "rewards", "overworld"]
+    i = {"k": 0}
+
+    def cur():
+        return screens[min(i["k"], len(screens) - 1)]
+
+    io, clicks = make_io(
+        in_overworld=lambda: cur() == "overworld",
+        at_rewards=lambda: cur() == "rewards",
+        at_text_box=lambda: cur() == "text",
+    )
+    base = io.click
+
+    def click(tok, sleep=0.0, repeat=1):
+        base(tok, sleep, repeat)
+        i["k"] += 1
+    io.click = click
+
+    assert A.clear_rewards(AttackerConfig(), io, caught=False) is True
+    assert clicks.count(("A", 1)) == 3   # it did NOT stop on the text box
+
+
 def test_catch_throws_default_when_carousel_never_appears():
     io, clicks = make_io(at_ball_select=lambda: False)
     cfg = AttackerConfig(catch_timeout_sec=1.0)
