@@ -15,6 +15,15 @@ Combat contract (mirror of the validated host macro):
   4. Safety cap (combat_max_turns): on reach while still in battle → WARNING, never
      fake victory.
 
+Win vs loss
+-----------
+A won raid and a lost raid BOTH end in the overworld, so the last frame cannot tell
+them apart. Only a win passes through the Catch / Don't-Catch prompt or the 'Rewards'
+result page, so those are latched into a `RaidOutcome` while they are on screen (see
+raid_over) and the verdict is read from the latch. Reaching the overworld with an
+empty latch is a LOSS, reported as `AttackerResult(win=False, reason="lost")` — the
+caller must then skip the catch entirely.
+
 Design for testability
 -----------------------
 All decision logic depends ONLY on an injected `BattleIO` (detector/controller/
@@ -177,7 +186,7 @@ def real_io(battle_state_fn: Optional[Callable[[], Optional[bool]]] = None) -> B
         # Gold "Catch" button (#ffe300) on the post-victory Catch/Don't-Catch prompt.
         # Calibrated live 2026-08-24: this region reads ~0.9 on the catch prompt and
         # ~0 elsewhere. It partially overlaps the command menu's gold "Battle" button,
-        # so boss_defeated() gates this with `not is_command_menu()`.
+        # so raid_over()/victory_confirmed() gate it with `not is_command_menu()`.
         try:
             return (
                 capture.region_color_ratio(
@@ -235,25 +244,90 @@ def real_io(battle_state_fn: Optional[Callable[[], Optional[bool]]] = None) -> B
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def boss_defeated(io: BattleIO) -> bool:
-    """True when the boss is down. **Vision is authoritative — never the host flag.**
+@dataclass
+class RaidOutcome:
+    """Sticky latch for HOW the raid ended, filled in by raid_over().
 
-    The host only exposes an ambiguous scene byte that reads "in battle" all the
-    way through victory, rewards and the catch screen, so it cannot distinguish
-    boss-alive from boss-dead; on a loss it would also report a false win. We
-    therefore decide purely from what is on screen (battle_ended()).
-
-    Only meaningful AFTER the battle has started (see wait_for_battle_start),
-    because battle_ended()'s minimap check is also true in the pre-battle lobby.
-
-    The instant the boss dies the game shows the Catch / Don't-Catch prompt, which is
-    NOT the overworld and NOT the rewards screen — so battle_ended() alone stays False
-    there and the old macro spun on turn-timeouts until the raid finally ended. We also
-    treat that catch prompt as "boss down", gated by `not is_command_menu()` so the
-    command menu's gold 'Battle' button (which overlaps the 'Catch' button region) can
-    never be misread as a defeat mid-fight.
+    Win and loss can NOT be told apart from the single frame where the raid ends:
+    both finish in the overworld with the minimap back in the corner. What separates
+    them is what came BEFORE that frame — a win passes through the Catch prompt and/or
+    the Rewards page, a loss goes straight out. So the flag is sticky: whichever poll
+    loop happens to see a victory screen sets `won`, and it stays set. A raid that
+    reaches the overworld with `won` still False was LOST.
     """
-    return io.battle_ended() or (io.at_catch_prompt() and not io.is_command_menu())
+
+    won: bool = False
+
+
+def victory_confirmed(io: BattleIO) -> bool:
+    """Positive, unambiguous proof that the boss went down.
+
+    Exactly two screens exist only after a win:
+      • the gold 'Catch' button of the post-victory Catch / Don't-Catch prompt
+        (at_catch_prompt), and
+      • the raid result 'Rewards' page (at_rewards).
+
+    A LOSS ("...was blown out of the Tera Raid Battle!") shows NEITHER — the game
+    returns to the overworld on its own (mechanism confirmed live 2026-08-19, see
+    CALIBRATION.md item 4). The absence of both is what tells a loss from a win, and
+    it is why nothing here may fall back to battle_ended().
+
+    Gated by `not is_command_menu()`: the command menu's gold 'Battle' button overlaps
+    the 'Catch' button region, so a live command menu must never read as a victory.
+    """
+    if io.at_catch_prompt() and not io.is_command_menu():
+        return True
+    return io.at_rewards()
+
+
+def raid_over(io: BattleIO, outcome: Optional[RaidOutcome] = None) -> bool:
+    """True when the raid stopped being ours to fight — by a WIN **or** by a LOSS.
+
+    On its own it says nothing about which: pass a `RaidOutcome` and read
+    `outcome.won` afterwards. Only a latched `won` means victory; anything else is a
+    defeat. This replaces the old `boss_defeated()`, which counted "the minimap is
+    back" as a win and so reported a false victory on every lost raid — after which
+    main.py mashed A at the overworld hunting for a ball carousel and told the host it
+    had caught a Pokémon that actually got away.
+
+    **Vision is authoritative — never the host flag.** The host only exposes an
+    ambiguous scene byte that reads "in battle" all the way through victory, rewards
+    and the catch screen, so it cannot distinguish boss-alive from boss-dead, and on a
+    loss it would report a false win too.
+
+    Only meaningful AFTER the battle has started (see wait_for_battle_start), because
+    the overworld minimap is also in the corner while standing at the den in the
+    pre-battle lobby.
+    """
+
+    def _won() -> bool:
+        if outcome is not None:
+            outcome.won = True
+        return True
+
+    # 1. Cheapest win signal, safe to run on every poll (one colour ratio): the gold
+    #    'Catch' button. The instant the boss dies the game shows the Catch /
+    #    Don't-Catch prompt, which is neither the overworld nor the rewards screen, so
+    #    battle_ended() alone stays False there and the macro would otherwise spin on
+    #    turn timeouts until the raid finally ended.
+    if io.at_catch_prompt() and not io.is_command_menu():
+        return _won()
+    # 2. Explicit defeat screen (inert until pokemon_sv.battle_lost is calibrated).
+    if io.battle_lost():
+        return True
+    # 3. A battle is still on screen — nothing more worth looking at this poll. This
+    #    also keeps the pricier detectors below off the per-turn hot path.
+    if not io.battle_ended():
+        return False
+    # 4. The raid is over. battle_ended() is "minimap back in the corner" OR the
+    #    'Rewards' result template, and only the overworld half can be a loss, so ask
+    #    the strict overworld detector which one this is. Anything that is NOT the
+    #    overworld here is the Rewards page => a win (belt and braces: it also stops a
+    #    flaky Rewards OCR from turning a real win into a reported loss).
+    if victory_confirmed(io) or not io.in_overworld():
+        return _won()
+    # 5. Overworld, and no victory screen was ever seen: we were blown out of the raid.
+    return True
 
 
 def wait_for_battle_start(cfg: AttackerConfig, io: BattleIO) -> bool:
@@ -274,12 +348,15 @@ def wait_for_battle_start(cfg: AttackerConfig, io: BattleIO) -> bool:
     return False
 
 
-def wait_for_my_turn(cfg: AttackerConfig, io: BattleIO) -> str:
+def wait_for_my_turn(
+    cfg: AttackerConfig, io: BattleIO, outcome: Optional[RaidOutcome] = None
+) -> str:
     """Poll for the next actionable state.
 
     Returns:
       "turn"    — the command menu is open (act now)
-      "ended"   — the boss is defeated (stop attacking)
+      "ended"   — the raid is over, win or loss (stop attacking; the caller reads
+                  `outcome.won` to learn which)
       "timeout" — neither happened within turn_poll_timeout_sec
 
     Only presses A on a detected text box, never blindly, so it can never
@@ -287,7 +364,7 @@ def wait_for_my_turn(cfg: AttackerConfig, io: BattleIO) -> str:
     """
     deadline = io.now() + cfg.turn_poll_timeout_sec
     while io.now() < deadline:
-        if boss_defeated(io):
+        if raid_over(io, outcome):
             return "ended"
         if io.is_command_menu():
             return "turn"
@@ -365,7 +442,13 @@ def commit_move(cfg: AttackerConfig, io: BattleIO) -> bool:
     return not io.is_move_select() and not io.is_command_menu()
 
 
-def take_turn(slot: int, want_tera: bool, cfg: AttackerConfig, io: BattleIO) -> bool:
+def take_turn(
+    slot: int,
+    want_tera: bool,
+    cfg: AttackerConfig,
+    io: BattleIO,
+    outcome: Optional[RaidOutcome] = None,
+) -> bool:
     """Play one turn onto the 1-indexed move `slot`, resilient to the real-time raid
     boss dismissing the menu mid-navigation.
 
@@ -381,8 +464,8 @@ def take_turn(slot: int, want_tera: bool, cfg: AttackerConfig, io: BattleIO) -> 
     commits; Tera = R from the move list, idempotent."""
     deadline = io.now() + cfg.menu_action_timeout_sec * 4  # whole-turn budget
     while io.now() < deadline:
-        if boss_defeated(io):
-            return True  # nothing left to do
+        if raid_over(io, outcome):
+            return True  # nothing left to do (won or lost)
         if not open_move_list(cfg, io):
             continue  # boss acting / no menu yet — reassess
         if want_tera and cfg.use_tera and io.tera_available():
@@ -417,10 +500,26 @@ def catch_pokemon(cfg: AttackerConfig, io: Optional[BattleIO] = None) -> bool:
     log = _logger()
     d = cfg.move_select_delay_sec
 
+    # 0. Never mash A at nothing. A LOST raid dumps us straight in the overworld with
+    #    no Catch button at all, and A there talks to whatever the player is facing
+    #    (picnic basket, NPC, another den) for the whole catch_timeout_sec. The caller
+    #    should only get here on a confirmed win (see raid_over/RaidOutcome), and this
+    #    is the second lock on that door.
+    if not io.at_catch_prompt() and not io.at_ball_select() and io.in_overworld():
+        log("WARNING", "no Catch button on screen and already in the overworld — "
+                       "skipping the catch (raid lost?)")
+        return False
+
     # 1. Advance post-battle text and accept 'Catch' (default) until the carousel
     #    appears. Stop the instant it's detected so A doesn't throw the wrong ball.
     deadline = io.now() + cfg.catch_timeout_sec
     while io.now() < deadline and not io.at_ball_select():
+        # Bail the moment the overworld comes back: the prompt is gone (declined,
+        # timed out, or never existed), so every further A lands on the world.
+        if io.in_overworld():
+            log("WARNING", "back in the overworld before the ball carousel appeared "
+                           "— aborting the catch instead of mashing A")
+            return False
         io.click("A", sleep=0.15)
         io.sleep(cfg.vision_poll_interval_sec)
 
@@ -467,6 +566,9 @@ def clear_rewards(cfg: AttackerConfig, io: Optional[BattleIO] = None) -> bool:
     log = _logger()
     deadline = io.now() + cfg.rewards_clear_timeout_sec
     while io.now() < deadline:
+        if io.in_overworld():
+            return True  # minimap is back — nothing left to clear (also the whole
+            #              story on a lost raid, which lands here already home)
         if io.at_text_box():
             time.sleep(1)  # wait for the continue arrow to appear (animation)
             io.click("A", sleep=0.4)  # advance a message / continue arrow
@@ -500,47 +602,59 @@ def run_attacker_macro(
 
     log = _logger()
 
+    # The raid's outcome is latched as it happens (see RaidOutcome): the Catch prompt /
+    # Rewards page are only on screen for a moment, and any of the poll loops below can
+    # be the one that sees them. Nothing here may report a win off `raid_over()` alone.
+    outcome = RaidOutcome()
+
+    def finish(turns: int) -> AttackerResult:
+        """Turn the latched outcome into a result. A raid that ended without ever
+        showing a Catch prompt or a Rewards page was LOST — never fake a win, or the
+        caller throws balls at the overworld and tells the host it caught the boss."""
+        if outcome.won:
+            log("OK", f"boss defeated after {turns} attacking turn(s)")
+            return AttackerResult(win=True, reason="boss-defeated", turns=turns)
+        log("WARNING", f"raid LOST after {turns} turn(s) — back in the overworld with "
+                       "no Catch button and no Rewards screen")
+        return AttackerResult(win=False, reason="lost", turns=turns)
+
     # 1. Wait for the battle to actually begin before arming end-detection.
     if not wait_for_battle_start(cfg, io):
         log("WARNING", "battle never started (no command menu / host flag) — aborting")
         return AttackerResult(win=False, reason="battle-never-started", turns=0)
 
     # 2. Turn 1 — Belly Drum, once only.
-    r = wait_for_my_turn(cfg, io)
+    r = wait_for_my_turn(cfg, io, outcome)
     if r == "ended":
-        log("OK", "boss already down before turn 1")
-        return AttackerResult(win=True, reason="boss-defeated", turns=0)
+        return finish(0)
     if io.battle_lost():
         return AttackerResult(win=False, reason="lost", turns=0)
     if r == "turn":
         log("BATTLE", f"Turn 1: Belly Drum (slot {cfg.belly_drum_slot})")
         take_turn(
-            cfg.belly_drum_slot, want_tera=False, cfg=cfg, io=io
+            cfg.belly_drum_slot, want_tera=False, cfg=cfg, io=io, outcome=outcome
         )  # never Tera turn 1
     else:  # timeout on turn 1 — re-check, then fall through to the Drain Punch loop
         log("WARNING", "turn 1 timed out waiting for the command menu")
-        if boss_defeated(io):
-            return AttackerResult(win=True, reason="boss-defeated", turns=0)
+        if raid_over(io, outcome):
+            return finish(0)
 
     # 3. Turn 2+ — Drain Punch until the boss dies.
     turn = 2
     while turn <= cfg.combat_max_turns:
-        if boss_defeated(io):
-            log("OK", f"boss defeated after {turn - 1} attacking turn(s)")
-            return AttackerResult(win=True, reason="boss-defeated", turns=turn - 1)
+        if raid_over(io, outcome):
+            return finish(turn - 1)
         if io.battle_lost():
             log("WARNING", "battle lost (KO / timeout)")
             return AttackerResult(win=False, reason="lost", turns=turn - 1)
 
-        r = wait_for_my_turn(cfg, io)
+        r = wait_for_my_turn(cfg, io, outcome)
         if r == "ended":
-            log("OK", f"boss defeated after {turn - 1} attacking turn(s)")
-            return AttackerResult(win=True, reason="boss-defeated", turns=turn - 1)
+            return finish(turn - 1)
         if r == "timeout":
-            if boss_defeated(io):
-                log("OK", "boss defeated (confirmed after turn timeout)")
-                return AttackerResult(win=True, reason="boss-defeated", turns=turn - 1)
-            log("WARNING", f"turn {turn} timed out — boss not confirmed dead, retrying")
+            if raid_over(io, outcome):
+                return finish(turn - 1)
+            log("WARNING", f"turn {turn} timed out — raid not over, retrying")
             turn += 1
             continue
 
@@ -551,7 +665,7 @@ def run_attacker_macro(
             f"Turn {turn}: Drain Punch (slot {cfg.drain_punch_slot})"
             + (" + Tera" if cfg.use_tera else ""),
         )
-        take_turn(cfg.drain_punch_slot, want_tera=True, cfg=cfg, io=io)
+        take_turn(cfg.drain_punch_slot, want_tera=True, cfg=cfg, io=io, outcome=outcome)
         turn += 1
 
     # 4. Safety cap reached while still in battle.

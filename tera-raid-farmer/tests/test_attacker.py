@@ -70,52 +70,113 @@ def make_io(**overrides):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# boss_defeated — host flag authoritative, vision fallback
+# raid_over / victory_confirmed — vision only, and a win needs POSITIVE proof
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def test_boss_defeated_false_while_vision_sees_battle():
+def test_raid_over_false_while_vision_sees_battle():
     # Vision is authoritative: no end-screen visible → still fighting.
     io, _ = make_io(battle_ended=lambda: False)
-    assert A.boss_defeated(io) is False
+    assert A.raid_over(io) is False
 
 
-def test_boss_defeated_true_when_vision_sees_end():
+def test_raid_over_true_when_vision_sees_end():
     io, _ = make_io(battle_ended=lambda: True)
-    assert A.boss_defeated(io) is True
+    assert A.raid_over(io) is True
 
 
-def test_boss_defeated_true_on_catch_prompt():
+def test_raid_over_true_on_catch_prompt():
     # Boss dies -> Catch/Don't-Catch prompt (not overworld, not the rewards screen),
     # so battle_ended() is still False but the catch prompt means the boss is down.
     io, _ = make_io(battle_ended=lambda: False,
                     at_catch_prompt=lambda: True,
                     is_command_menu=lambda: False)
-    assert A.boss_defeated(io) is True
+    out = A.RaidOutcome()
+    assert A.raid_over(io, out) is True
+    assert out.won is True
 
 
-def test_boss_defeated_gated_off_on_command_menu():
+def test_raid_over_gated_off_on_command_menu():
     # The command menu's gold "Battle" button overlaps the "Catch" button region, so
     # at_catch_prompt() can read true there; the `not is_command_menu()` gate must keep
-    # a live command menu from ever being mistaken for a defeat mid-fight.
+    # a live command menu from ever being mistaken for the end of the raid.
     io, _ = make_io(battle_ended=lambda: False,
                     at_catch_prompt=lambda: True,
                     is_command_menu=lambda: True)
-    assert A.boss_defeated(io) is False
+    out = A.RaidOutcome()
+    assert A.raid_over(io, out) is False
+    assert out.won is False
 
 
-def test_boss_defeated_ignores_host_flag():
+def test_raid_over_ignores_host_flag():
     # The host flag is deliberately NOT consulted — only vision decides.
     io, _ = make_io(battle_state=lambda: False, battle_ended=lambda: False)
-    assert A.boss_defeated(io) is False
+    assert A.raid_over(io) is False
     io2, _ = make_io(battle_state=lambda: True, battle_ended=lambda: True)
-    assert A.boss_defeated(io2) is True
+    assert A.raid_over(io2) is True
 
 
 def test_vision_wins_over_host_flag():
-    # Host flag says still in battle, but vision sees the end screen → boss down.
+    # Host flag says still in battle, but vision sees the end screen → raid over.
     io, _ = make_io(battle_state=lambda: True, battle_ended=lambda: True)
-    assert A.boss_defeated(io) is True
+    assert A.raid_over(io) is True
+
+
+# ── Win vs loss: the overworld alone is NOT a win ────────────────────────────
+
+
+def test_raid_over_overworld_without_victory_screen_is_a_loss():
+    # A lost raid returns to the overworld on its own: minimap back (battle_ended +
+    # in_overworld) with no Catch button and no Rewards page. Over, but NOT won.
+    io, _ = make_io(battle_ended=lambda: True, in_overworld=lambda: True)
+    out = A.RaidOutcome()
+    assert A.raid_over(io, out) is True
+    assert out.won is False
+
+
+def test_raid_over_latches_the_win_before_the_overworld():
+    # The Catch prompt is only on screen for a moment; once seen, the latch must
+    # survive the later frames where we are already back in the overworld.
+    screen = {"catch": True}
+    io, _ = make_io(battle_ended=lambda: True,
+                    at_catch_prompt=lambda: screen["catch"],
+                    in_overworld=lambda: not screen["catch"])
+    out = A.RaidOutcome()
+    assert A.raid_over(io, out) is True and out.won is True
+    screen["catch"] = False               # rewards cleared, back in the overworld
+    assert A.raid_over(io, out) is True and out.won is True
+
+
+def test_raid_over_rewards_page_is_a_win():
+    # battle_ended() also fires on the 'Rewards' result template. Not the overworld →
+    # it can only be the rewards page, which only a win reaches.
+    io, _ = make_io(battle_ended=lambda: True,
+                    at_rewards=lambda: True,
+                    in_overworld=lambda: False)
+    out = A.RaidOutcome()
+    assert A.raid_over(io, out) is True
+    assert out.won is True
+
+
+def test_raid_over_rewards_ocr_flake_still_counts_as_a_win():
+    # Rewards template matched (battle_ended) but its OCR twin missed. Not the
+    # overworld, so it must NOT be downgraded to a loss.
+    io, _ = make_io(battle_ended=lambda: True,
+                    at_rewards=lambda: False,
+                    in_overworld=lambda: False)
+    out = A.RaidOutcome()
+    assert A.raid_over(io, out) is True
+    assert out.won is True
+
+
+def test_victory_confirmed_needs_a_win_screen():
+    assert A.victory_confirmed(make_io()[0]) is False
+    assert A.victory_confirmed(make_io(at_rewards=lambda: True)[0]) is True
+    assert A.victory_confirmed(
+        make_io(at_catch_prompt=lambda: True)[0]) is True
+    # Back in the overworld with neither → no victory, whatever else is true.
+    assert A.victory_confirmed(
+        make_io(battle_ended=lambda: True, in_overworld=lambda: True)[0]) is False
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -281,7 +342,8 @@ def test_take_turn_commits_slot_4():
 
 def test_take_turn_teras_when_available():
     sim = BattleSim(Clock())
-    A.take_turn(2, want_tera=True, cfg=AttackerConfig(tera_button="R"),
+    A.take_turn(2, want_tera=True,
+                cfg=AttackerConfig(tera_button="R", use_tera=True),
                 io=sim.io(tera_available=True))
     assert sim.tera == 1
     assert sim.committed == 2
@@ -487,7 +549,7 @@ def test_catch_fuzzy_matches_noisy_ocr():
 
 
 def _instrument(monkeypatch, *, start=True, turn_results, defeated_after_drains,
-                tera_available=False, lost=False):
+                tera_available=False, lost=False, lost_in_overworld=False):
     """Patch the macro's collaborators and return an ordered event log.
 
     events: ("move", slot) and ("tera",) in call order.
@@ -495,19 +557,30 @@ def _instrument(monkeypatch, *, start=True, turn_results, defeated_after_drains,
     events = []  # ("turn", slot, want_tera) per take_turn call, in order
     cfg = AttackerConfig(belly_drum_slot=1, drain_punch_slot=2)
 
-    def fake_take_turn(slot, want_tera, cfg, io):
+    def fake_take_turn(slot, want_tera, cfg, io, outcome=None):
         events.append(("turn", slot, want_tera))
 
-    def fake_defeated(io):
+    def fake_raid_over(io, outcome=None):
         drains = sum(1 for e in events if e[0] == "turn" and e[1] == cfg.drain_punch_slot)
-        return drains >= defeated_after_drains
+        if drains < defeated_after_drains:
+            return False
+        # Boss down → the real raid_over would have latched the Catch prompt here.
+        if outcome is not None and not lost_in_overworld:
+            outcome.won = True
+        return True
 
     results = iter(turn_results)
 
     monkeypatch.setattr(A, "wait_for_battle_start", lambda c, io: start)
-    monkeypatch.setattr(A, "wait_for_my_turn", lambda c, io: next(results, "turn"))
+    def fake_wait_for_my_turn(c, io, outcome=None):
+        r = next(results, "turn")
+        if r == "ended" and outcome is not None and not lost_in_overworld:
+            outcome.won = True   # the real one only ends via raid_over(), which latches
+        return r
+
+    monkeypatch.setattr(A, "wait_for_my_turn", fake_wait_for_my_turn)
     monkeypatch.setattr(A, "take_turn", fake_take_turn)
-    monkeypatch.setattr(A, "boss_defeated", fake_defeated)
+    monkeypatch.setattr(A, "raid_over", fake_raid_over)
 
     io, _ = make_io(tera_available=lambda: tera_available, battle_lost=lambda: lost)
     return cfg, io, events
@@ -578,3 +651,64 @@ def test_macro_battle_lost(monkeypatch):
     result = A.run_attacker_macro(cfg, io)
     assert result.win is False
     assert result.reason == "lost"
+
+
+def test_macro_reports_loss_when_raid_ends_with_no_victory_screen(monkeypatch):
+    # The regression this whole latch exists for: the raid ends (minimap back) but no
+    # Catch prompt / Rewards page was ever seen. The old boss_defeated() called that a
+    # win, main.py then threw balls at the overworld and told the host it caught the
+    # boss. It must be reported as a LOSS.
+    cfg, io, events = _instrument(
+        monkeypatch, turn_results=["turn"] * 5, defeated_after_drains=2,
+        lost_in_overworld=True)
+    result = A.run_attacker_macro(cfg, io)
+    assert result.win is False
+    assert result.reason == "lost"
+    assert result.turns == 3          # Belly Drum + 2 Drain Punches, still reported
+
+
+def test_macro_reports_loss_on_turn_timeout_into_the_overworld(monkeypatch):
+    # Exact shape of the live failure: turn timeout, then the next poll finds the raid
+    # over — with nothing to catch.
+    cfg, io, events = _instrument(
+        monkeypatch, turn_results=["timeout"], defeated_after_drains=0,
+        lost_in_overworld=True)
+    result = A.run_attacker_macro(cfg, io)
+    assert result.win is False
+    assert result.reason == "lost"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# catch_pokemon — never presses A at an overworld with no Catch button
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def test_catch_aborts_immediately_when_already_in_the_overworld():
+    # Raid lost: no Catch prompt, no carousel, minimap back. Pressing A here talks to
+    # whatever the player is facing, so the catch must be a no-op.
+    io, clicks = make_io(in_overworld=lambda: True,
+                         at_catch_prompt=lambda: False,
+                         at_ball_select=lambda: False)
+    assert A.catch_pokemon(AttackerConfig(), io) is False
+    assert clicks == []
+
+
+def test_catch_aborts_when_the_overworld_arrives_mid_wait():
+    # Prompt vanished (declined / timed out) while we were advancing text: stop, do
+    # not keep mashing A for the rest of catch_timeout_sec.
+    state = {"home": False}
+
+    def click_then_home(tok, sleep=0.0, repeat=1):
+        state["home"] = True
+
+    io, clicks = make_io(at_ball_select=lambda: False,
+                         in_overworld=lambda: state["home"])
+    base = io.click
+
+    def click(tok, sleep=0.0, repeat=1):
+        base(tok, sleep, repeat)
+        click_then_home(tok)
+    io.click = click
+
+    assert A.catch_pokemon(AttackerConfig(catch_timeout_sec=10.0), io) is False
+    assert clicks.count(("A", 1)) == 1    # one advance, then bailed
