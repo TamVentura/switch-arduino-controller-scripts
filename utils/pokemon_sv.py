@@ -166,8 +166,10 @@ def battle_lost() -> bool:
     """True on defeat / timeout (KO, 'blown out of the raid', timer at zero).
 
     NOT YET CALIBRATED — the calibration raid was won, so no defeat frame was
-    captured. Kept inert (safe): losing is rare and the macro's safety cap
-    handles a stuck loop. Capture a defeat screen live to enable this detector."""
+    captured. Kept inert (safe), and no longer load-bearing: a loss is now decided
+    by ABSENCE of a win screen instead (attacker.raid_over / RaidOutcome — the raid
+    ends with no Catch prompt and no 'Rewards' page ⇒ lost). Calibrating this only
+    makes the same verdict arrive earlier, on the defeat frame itself."""
     return False
 
 

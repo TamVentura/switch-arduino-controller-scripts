@@ -74,20 +74,38 @@ Heavy Slam(4); "TERASTALLIZE! [R]" shows in the move list; boss Grumpig used a
    `at_ball_select`). Verify live: the A accepting "Catch" doesn't overshoot into an
    early throw; Right (`"1"`) moves the carousel; OCR lands on Timer Ball; nickname
    prompt dismissed by the reward tail.
-4. **`battle_lost` / win-vs-loss disambiguation.** MECHANISM CONFIRMED (user, 2026-08-19):
-   **on a loss the game returns to the overworld ON ITS OWN — no catch prompt, no rewards.**
-   The host FSM has no defeat state (states: IDLE/CONNECTING/SEARCH_LOOP/EVALUATING/
-   SNAPSHOT_RAM/HOSTING_LOBBY/WAITING_FOR_FARMER/IN_BATTLE/BATTLE_REWARDS/IN_MEMORY_RESET/
-   FARM_RENDER/PAUSED/STOPPED), so loss is a Switch-2-side vision fact, not a host signal.
-   Implication (a real bug today): when the host leaves IN_BATTLE on a loss, `boss_defeated`
-   returns True → macro reports a **false win** → `main.py` runs the catch and calls
-   `signal_caught` for a mon that was never caught. So win/loss must be disambiguated by
-   the post-battle screen: **WIN → catch prompt / ball carousel / rewards appear; LOSS →
-   straight to the overworld (minimap) with none of those.** NOT YET IMPLEMENTED — a single
-   frame can't tell win-overworld (after rewards) from loss-overworld, so it needs a
-   *sequence* detector, which needs a live LOSS captured (and the win catch-prompt frame)
-   to build safely. Implementing it blind risks a false loss that skips a real catch. Kept
-   inert for now (safe). **Live TODO: lose one raid on purpose to capture the loss tail.**
+4. **`battle_lost` / win-vs-loss disambiguation.** ✅ IMPLEMENTED 2026-09-02 (needs one
+   live loss to confirm). MECHANISM CONFIRMED (user, 2026-08-19): **on a loss the game
+   returns to the overworld ON ITS OWN — no catch prompt, no rewards.** The host FSM has no
+   defeat state (states: IDLE/CONNECTING/SEARCH_LOOP/EVALUATING/SNAPSHOT_RAM/HOSTING_LOBBY/
+   WAITING_FOR_FARMER/IN_BATTLE/BATTLE_REWARDS/IN_MEMORY_RESET/FARM_RENDER/PAUSED/STOPPED),
+   so loss is a Switch-2-side vision fact, not a host signal.
+
+   The bug it fixes: the old `boss_defeated()` counted `battle_ended()` (minimap back in
+   the corner) as a win, so **every lost raid reported a false win** → `main.py` ran the
+   catch (20 s of A at the overworld, hunting a ball carousel that never comes) and called
+   `signal_caught` for a mon that got away, burning the host's `den_seed`.
+
+   As predicted, one frame can't tell win-overworld from loss-overworld, so it is a
+   *sequence* detector — but it needs no new template and no captured loss frame, because
+   it keys off the **already-calibrated win screens**:
+   - `attacker.victory_confirmed(io)` = the gold `Catch` button (`at_catch_prompt`, the
+     #ffe300 region calibrated in item 3) **or** the `Rewards` page (`at_rewards` OCR).
+   - `attacker.RaidOutcome` latches that sticky the moment any poll loop sees it, so the
+     verdict survives the later overworld frames.
+   - `attacker.raid_over(io, outcome)` = "the raid stopped being ours to fight", win or
+     loss; the macro reads `outcome.won` for which. Overworld + empty latch ⇒
+     `AttackerResult(win=False, reason="lost")`, and `main.py` then skips both
+     `catch_pokemon` and `signal_caught`. `catch_pokemon` also refuses to press A once
+     `in_overworld()` with no Catch button, as a second lock.
+   - `battle_ended()` firing while NOT `in_overworld()` is the Rewards half of that
+     detector ⇒ still a win, so a flaky Rewards OCR can never manufacture a false loss.
+
+   **Live TODO (cheap now): lose one raid on purpose and confirm the log says
+   `raid LOST after N turn(s)` and that nothing throws a ball.** `calib_drive`'s `detect`
+   command now dumps `at_catch_prompt` / `at_rewards` / `in_overworld` for the loss tail.
+   Calibrating `pokemon_sv.battle_lost` on a real defeat frame is still worth doing — it
+   only makes the same verdict arrive sooner.
 5. **Link-code entry keypad (`enter_tera_raid_lobby`).** ✅ DONE 2026-08-19 (live, and
    re-confirmed this session joining code 2303 with the Switch 2 offline). See "Lobby
    entry (item 5)" below.
