@@ -1,6 +1,7 @@
 {
   "host_api_url": "http://127.0.0.1:8080",
   "rewards_mash_count": 25,
+  "code_entry_attempts": 3,
   "auto_catch": true,
   "catch_ball": "Timer Ball",
   "belly_drum_slot": 1,

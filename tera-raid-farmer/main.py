@@ -24,6 +24,7 @@ from utils.pokemon_sv import (
     PortalOption,
     goto_portal_option,
     get_portal_option,
+    get_text_box,
 )
 from colorama import Fore, Style
 
@@ -64,6 +65,7 @@ def load_config() -> dict:
     return {
         "host_api_url": "http://127.0.0.1:8080",
         "rewards_mash_count": 25,
+        "code_entry_attempts": 3,   # retries of the Link Code entry per lobby push
         "auto_catch": True,
         "catch_ball": "Timer Ball",  # pokemon mode: always catch with this ball
         # ── Iron Hands attacker macro (Switch 2 is now the ATTACKER) ──
@@ -115,9 +117,15 @@ def signal_caught(base_url: str) -> bool:
         return False
 
 
-def type_link_code_numeric(code: str, step: float = 0.12) -> None:
+def type_link_code_numeric(code: str, step: float = 0.12) -> bool:
     """Type a numeric link code on the Switch 2 Tera-Raid keypad (3×4 grid) and
     confirm with '+' (OK), which also fires the search immediately.
+
+    Returns True once OK has been pressed (the search is running). Returns False —
+    WITHOUT pressing OK — when the keypad did not end up holding all 4 digits, which
+    is what a mis-navigated keypress leaves behind: the game refuses OK on a short
+    code and we would sit on the keypad forever. The keypad is left open so the
+    caller can cancel out and type the code again.
 
     Verified live 2026-08-19: the keypad opens with the cursor on '1'; Up clamps at
     the top row; Down clamps at the bottom → the '0' key from any column; Left/Right
@@ -184,9 +192,20 @@ def type_link_code_numeric(code: str, step: float = 0.12) -> None:
         c("A")                              # enter the digit; cursor stays
 
     time.sleep(0.2)
+
+    # The OK button only lights up (cyan) at 4/4. If it is still idle we typed fewer
+    # digits than we meant to, and pressing '+' would be silently refused — bail out
+    # and let the caller retype instead of getting stuck here.
+    if not link_code_ready():
+        print(f"{Fore.YELLOW}[JOYCON]{Style.RESET_ALL} keypad did not take the whole "
+              f"code [{code}] — not pressing OK (it would be refused)")
+        _kp_shot("incomplete")
+        return False
+
     _kp_shot("plus_OK")
     click("+", sleep=2.0)                   # OK — confirms the code AND searches
     _kp_shot("after_search")
+    return True
 
 
 # 4K gold strip that reads ~100% #ffe300 ONLY when the joined raid lobby is showing
@@ -204,6 +223,71 @@ def at_raid_lobby(frame=None) -> bool:
             *_READY_BAR_REGION, "#ffe300", tolerance=80, frame=frame) >= 0.6
     except Exception:
         return False
+
+
+# ── Link Code keypad state, read off the OK button ───────────────────────────
+# The keypad's OK button is a big flat block whose colour says whether the typed
+# code is submittable. Calibrated live 2026-09-02 over 60+ frames of every screen
+# this flow visits:
+#   #3e586a (steel blue) → keypad open, code INCOMPLETE (fewer than 4 digits)
+#   #2eace4 (cyan)       → keypad open, 4/4 digits in — OK will accept and search
+#   neither              → the keypad is not on screen (≤ 0.05 on every other screen)
+_KEYPAD_OK_REGION = (2740, 1400, 2990, 1850)
+_KEYPAD_OK_IDLE = "#3e586a"
+_KEYPAD_OK_READY = "#2eace4"
+
+
+def _keypad_ok_ratio(hex_color: str, tolerance: float, frame=None) -> float:
+    try:
+        return capture.region_color_ratio(
+            *_KEYPAD_OK_REGION, hex_color, tolerance=tolerance, frame=frame
+        )
+    except Exception:
+        return 0.0
+
+
+def link_code_ready(frame=None) -> bool:
+    """True when the keypad is open with all 4 digits typed (OK lit cyan) — only
+    then does pressing '+' actually fire the search. With fewer digits the game
+    silently refuses OK and we stay on the keypad forever."""
+    return _keypad_ok_ratio(_KEYPAD_OK_READY, 40, frame) >= 0.6
+
+
+def at_link_code_keypad(frame=None) -> bool:
+    """True while the Link Code keypad is on screen, complete code or not. Lets us
+    tell 'the search is running' from 'OK was refused and we are still typing'."""
+    return (
+        link_code_ready(frame)
+        or _keypad_ok_ratio(_KEYPAD_OK_IDLE, 20, frame) >= 0.6
+    )
+
+
+def _wait_search_outcome(timeout: float = 20.0) -> str:
+    """Poll the screen after the Link Code search was fired and say how it went:
+
+      'lobby'   — we are in the host's lobby ('All ready to go!' showing)
+      'no_raid' — the game answered with a text box ("No raid was found!"), which is
+                  what a wrong or stale code gets
+      'keypad'  — the keypad is still up, so OK never took the code
+      'timeout' — none of the above within `timeout`
+
+    Lobby is checked first: it is the only outcome that means we are done.
+    """
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            frame = capture.get_latest_frame()
+        except Exception:
+            time.sleep(0.4)
+            continue
+        if at_raid_lobby(frame):
+            return "lobby"
+        if at_link_code_keypad(frame):
+            return "keypad"
+        if get_text_box() != "error":
+            return "no_raid"
+        time.sleep(0.4)
+    return "timeout"
 
 
 def _ensure_in_poke_portal(max_tries: int = 12) -> bool:
@@ -255,12 +339,19 @@ def _ensure_in_poke_portal(max_tries: int = 12) -> bool:
     return False
 
 
-def enter_tera_raid_lobby(code: str) -> bool:
+def enter_tera_raid_lobby(code: str, attempts: int = 3) -> bool:
     """Join the host's Tera Raid lobby on Switch 2: (reach) Poké Portal → Tera Raid
     Battle → Link Code keypad → type `code` → search → confirm 'All ready to go!'.
 
     Portal-aware: if we are already in the Poké Portal (or one of its sub-screens)
     we do NOT go back through the main menu — see _ensure_in_poke_portal.
+
+    The code entry itself is retried up to `attempts` times, because both ways it
+    can fail land us back on the Tera Raid Battle Search screen for free:
+      • the game answers "No raid was found!" (wrong/stale code) → 'A' dismisses it
+      • the keypad refuses OK because fewer than 4 digits went in → 'X' cancels it
+    Only the walk to the search screen happens once; everything from the keypad on
+    is what repeats.
 
     Returns True only once we are confirmed inside the host's lobby (via at_raid_lobby)
     and have pressed 'All ready to go!'. Returns False if the join never lands, so the
@@ -278,27 +369,57 @@ def enter_tera_raid_lobby(code: str) -> bool:
               "assuming cursor is on Tera Raid Battle")
     click("A", sleep=4.0)                    # → Tera Raid Battle Search (Link Code card)
 
-    # 3. Open the Link Code keypad ('Link Code' card is pre-selected).
-    click("A", sleep=1.5)
+    attempts = max(1, int(attempts))
+    for attempt in range(1, attempts + 1):
+        if attempt > 1:
+            print(f"{Fore.CYAN}[FARMER]{Style.RESET_ALL} typing the code again "
+                  f"(attempt {attempt}/{attempts})...")
 
-    # 4. Type the code — '+' also fires the search.
-    type_link_code_numeric(code)
+        # 3. Open the Link Code keypad ('Link Code' card is pre-selected). A previous
+        #    attempt always cancels/dismisses back to this screen, so the same press
+        #    works every time round — unless we are somehow still on the keypad.
+        if not at_link_code_keypad():
+            click("A", sleep=1.5)
 
-    # 5. Wait for the join to actually land (the lobby screen appears) before pressing
-    #    'All ready to go!'. Pressing A blindly during the search/join transition
-    #    misses the lobby and leaves us un-readied, so poll for the lobby (up to ~20s)
-    #    and confirm with a single A only once it is on screen.
-    deadline = time.time() + 20.0
-    while time.time() < deadline:
-        if at_raid_lobby():
+        # 4. Type the code — '+' also fires the search. False means the keypad never
+        #    reached 4/4 and OK was never pressed: cancel out and retype from a fresh
+        #    keypad (whose cursor is back on '1', as the typing routine assumes).
+        if not type_link_code_numeric(code):
+            click("X", sleep=1.5)            # Cancel → Tera Raid Battle Search
+            continue
+
+        # 5. Wait for the join to actually land (the lobby screen appears) before
+        #    pressing 'All ready to go!'. Pressing A blindly during the search/join
+        #    transition misses the lobby and leaves us un-readied.
+        outcome = _wait_search_outcome(20.0)
+
+        if outcome == "lobby":
             print(f"{Fore.LIGHTGREEN_EX}[FARMER]{Style.RESET_ALL} Lobby joined — "
                   "confirming 'All ready to go!'")
             click("A", sleep=1.5)
             return True
-        time.sleep(0.4)
 
-    print(f"{Fore.YELLOW}[WARN]{Style.RESET_ALL} raid lobby not detected after entering "
-          "the code — join failed (code may be stale or the search missed it)")
+        if outcome == "no_raid":
+            print(f"{Fore.YELLOW}[WARN]{Style.RESET_ALL} the game answered 'No raid was "
+                  f"found!' for [{code}]")
+            click("A", sleep=1.5)            # dismiss → Tera Raid Battle Search
+            continue
+
+        if outcome == "keypad":
+            print(f"{Fore.YELLOW}[WARN]{Style.RESET_ALL} OK did not take the code — "
+                  "still sitting on the keypad")
+            click("X", sleep=1.5)            # Cancel → Tera Raid Battle Search
+            continue
+
+        # 'timeout': the search neither joined nor errored, so we have no idea what is
+        # on screen — retrying blind would press A/X somewhere unknown. Bail out and
+        # let the caller wait for the host to re-host.
+        print(f"{Fore.YELLOW}[WARN]{Style.RESET_ALL} raid lobby not detected after "
+              "entering the code, and no error box either — join failed")
+        return False
+
+    print(f"{Fore.YELLOW}[WARN]{Style.RESET_ALL} gave up on [{code}] after {attempts} "
+          "code-entry attempt(s) — join failed")
     return False
 
 
@@ -452,6 +573,7 @@ def main():
     host_api = config.get("host_api_url", "http://127.0.0.1:8080")
     rewards_mash = config.get("rewards_mash_count", 25)
     auto_catch = config.get("auto_catch", True)
+    code_entry_attempts = config.get("code_entry_attempts", 3)
     attacker_cfg = AttackerConfig.from_dict(config)
 
     # Event-driven link to the host over its /ws push. No HTTP polling: the host
@@ -500,7 +622,7 @@ def main():
 
         # 1. Enter Lobby on Switch 2 via Joycon. Only proceed if we actually joined —
         #    otherwise signalling the host would make it fight the raid solo.
-        if not enter_tera_raid_lobby(code):
+        if not enter_tera_raid_lobby(code, attempts=code_entry_attempts):
             print(f"{Fore.YELLOW}[SKIP]{Style.RESET_ALL} Did not join lobby [{code}]; "
                   "waiting for the host to re-host a fresh lobby.")
             continue
@@ -568,7 +690,8 @@ def _battle_test():
 
         # 2. Join the lobby (tested-working) — only fight if we truly joined.
         wake_screen()
-        joined = enter_tera_raid_lobby(code)
+        joined = enter_tera_raid_lobby(
+            code, attempts=config.get("code_entry_attempts", 3))
         if joined:
             print(f"{Fore.CYAN}[BATTLE-TEST]{Style.RESET_ALL} joined — signalling host to start.")
             signal_host_ready(host_api)
@@ -600,7 +723,8 @@ def _test_enter_lobby(code: str):
     TEMP-CALIB block."""
     def _fn():
         _start_calib_frame_dumper()
-        enter_tera_raid_lobby(code)
+        enter_tera_raid_lobby(
+            code, attempts=load_config().get("code_entry_attempts", 3))
         print(f"{Fore.LIGHTBLACK_EX}[TEMP-CALIB]{Style.RESET_ALL} enter done — "
               "Capture window stays open; press q there (or stop the process) to exit.")
         while not capture.is_stopped():
