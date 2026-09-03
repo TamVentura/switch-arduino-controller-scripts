@@ -2,8 +2,8 @@
 dex_za_vision.py — screen reading for the Legends Z-A link-trade dex filler.
 
 Everything here is a pure function of a captured frame, so it can be exercised
-offline against saved frames (see ``report()`` and ``tests/``) without a Switch,
-an Arduino or a capture card attached.
+offline against saved frames (see ``tests/``) without a Switch, an Arduino or a
+capture card attached.
 
 Screen model
 ------------
@@ -37,6 +37,12 @@ than by matching raw pixels: the tile background runs through a strong gradient
 down the grid, which wrecks plain BGR correlation, while the badge's own colour
 is dead flat (hue 39 at the 50th, 95th and 99th percentile).  The white outline
 is then verified separately -- see ``_outline_ratio``.
+
+Over 64 captured frames covering all 32 boxes, this identifies the badge set
+exactly on every one: real badges score >= 0.726 and nothing else exceeds 0.397,
+with outline ratios of >= 0.330 against <= 0.089.  Matching the template's raw
+pixels with ``template_matcher.find_all`` was measured against it and lost --
+59/64 frames per cell, 53/64 across the panel, at any threshold or scale sweep.
 """
 
 from __future__ import annotations
@@ -97,7 +103,7 @@ WHITE_HSV_HI = np.array([180, 60, 255])
 # ---------------------------------------------------------------------------
 # Thresholds
 # ---------------------------------------------------------------------------
-BADGE_SCORE_MIN = 0.60      # shape correlation; measured gap is 0.79 vs 0.00
+BADGE_SCORE_MIN = 0.55      # shape correlation: real badges >= 0.726, nothing else > 0.397
 BADGE_SCALES = (0.94, 1.0, 1.06)
 OUTLINE_RATIO_MIN = 0.25    # fraction of the ring around the badge that is white
 CURSOR_MARGIN_MIN = 40.0    # how far the selected tile must outshine the rest
@@ -151,7 +157,20 @@ _template_cache: np.ndarray | None = None
 
 
 def load_template() -> np.ndarray:
-    """The badge silhouette, as a uint8 mask.  Cached."""
+    """The badge's lime fill, as a uint8 mask, taken from the stored template.
+
+    The template on disk is a real screenshot crop with everything outside the
+    badge's white outline made transparent.  What gets correlated is the lime
+    fill inside it, keyed out of those same screenshot pixels -- the frame is
+    keyed the same way, so like is compared with like.
+
+    Correlating the badge's *pixels* instead was tried and measured worse: the
+    tile background runs a strong brightness gradient down the grid (59 at the
+    top row, 129 at the bottom), and against a badge this small that gradient
+    dominates.  Over 64 real frames, keying by colour and correlating the shape
+    identified the badge set exactly on 64 of them; `find_all` on the raw pixels
+    managed 59 per-cell and 53 across the whole panel, at any threshold.
+    """
     global _template_cache
     if _template_cache is None:
         bgra = cv2.imread(TEMPLATE_PATH, cv2.IMREAD_UNCHANGED)
@@ -160,30 +179,71 @@ def load_template() -> np.ndarray:
                 f"badge template missing: {TEMPLATE_PATH}\n"
                 "Regenerate it with make_template() against a frame that shows a badge."
             )
-        _template_cache = bgra[:, :, 3] if bgra.shape[2] == 4 else bgra[:, :, 0]
+        if bgra.shape[2] != 4:
+            raise ValueError(f"{TEMPLATE_PATH} has no alpha channel")
+        _template_cache = cv2.bitwise_and(badge_mask(bgra[:, :, :3]), bgra[:, :, 3])
     return _template_cache
+
+
+def badge_shape(win: np.ndarray) -> np.ndarray:
+    """Mask of the whole badge glyph: everything inside its white outline.
+
+    The badge is a lime thumbs-up traced by a white outline.  Finding it is two
+    steps:
+
+    1. grow outward from the lime fill through white pixels only, which picks up
+       the outline while ignoring any pale sprite that merely shares the corner
+       without touching the badge;
+    2. fill that region's outer contour, so the pixels *inside* the outline are
+       kept whatever colour they happen to be -- the shaded gap between thumb
+       and fist, the anti-aliased edges.
+
+    Without the second step the mask comes out speckled with holes wherever a
+    pixel sits between the two colour bands, which is not the shape of the thing
+    on screen.
+    """
+    lime = badge_mask(win)
+    pale = white_mask(win)
+    reachable = cv2.bitwise_or(lime, pale)
+    kernel = np.ones((3, 3), np.uint8)
+
+    grown = lime
+    while True:
+        bigger = cv2.bitwise_and(cv2.dilate(grown, kernel), reachable)
+        if np.array_equal(bigger, grown):
+            break
+        grown = bigger
+
+    solid = np.zeros_like(grown)
+    contours, _ = cv2.findContours(grown, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cv2.drawContours(solid, contours, -1, 255, thickness=cv2.FILLED)
+    return solid
 
 
 def make_template(frame: np.ndarray, row: int, col: int, path: str = TEMPLATE_PATH) -> np.ndarray:
     """Cut the badge out of a real frame and save it as a BGRA template.
 
-    The alpha channel is the colour key, cropped to its own bounding box, so the
-    stored template carries the badge and nothing else -- no tile background, no
-    padding.  Point this at a slot you can see carries a badge.
+    The colour in the file is the screenshot's own, untouched.  Alpha is the
+    badge shape from ``badge_shape``, so every pixel outside the lime fill and
+    its white outline is transparent -- no tile background, no sprite, no
+    padding -- and the file is cropped to that shape's bounding box.
+
+    Pick a slot whose Pokemon has nothing white up against the badge, or the
+    outline grows into the sprite.  ``reference_frames/box_full_badges.png`` at
+    (4, 6) is a good one: the Golbat there is nowhere near white.
     """
     x1, y1, x2, y2 = badge_roi(row, col)
     win = capture.get_frame_region(x1, y1, x2, y2, frame=frame)
-    mask = badge_mask(win)
-    ys, xs = np.nonzero(mask)
+    shape = badge_shape(win)
+    ys, xs = np.nonzero(shape)
     if len(ys) == 0:
-        raise ValueError(f"no badge-coloured pixels in slot ({row},{col})")
-    win = win[ys.min(): ys.max() + 1, xs.min(): xs.max() + 1]
-    mask = mask[ys.min(): ys.max() + 1, xs.min(): xs.max() + 1]
+        raise ValueError(f"no badge in slot ({row},{col})")
+    box = (slice(ys.min(), ys.max() + 1), slice(xs.min(), xs.max() + 1))
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    cv2.imwrite(path, np.dstack([win, mask]))
+    cv2.imwrite(path, np.dstack([win[box], shape[box]]))
     global _template_cache
-    _template_cache = mask
-    return mask
+    _template_cache = shape[box]
+    return _template_cache
 
 
 # ---------------------------------------------------------------------------
