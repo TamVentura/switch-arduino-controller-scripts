@@ -1,0 +1,11 @@
+{
+  "com_port": "COM6",
+  "start_box": 13,
+  "dpad_gap": 0.06,
+  "a_gap": 0.25,
+  "flash_timeout": 90.0,
+  "return_timeout": 240.0,
+  "poll_interval": 0.05,
+  "settle": 0.35,
+  "max_trades": 0
+}
