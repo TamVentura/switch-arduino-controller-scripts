@@ -82,11 +82,63 @@ Medido no recorte `2788, 268, 3806, 2018` (509x875, escala 2.0 para 4K):
 - **cuidado:** filtrar vermelho na linha toda dá falso positivo no *sprite*
   do Pokémon (apanhei um em x ≈ 2976). Ler só a coluna do badge.
 
+## As 3 abas do detalhe (mudam-se com A)
+
+Barra das abas no canto superior esquerdo, zona `80, 36, 716, 222` (318x93).
+O **A cicla** as três, sempre na mesma ordem, e dá wrap:
+
+| # | ícone | aba | interesse |
+|---|---|---|---|
+| 1 | Poké Ball | **dados do Pokémon** | ele disse que **não interessa** |
+| 2 | visto | **Research Tasks** | **uma das mais importantes** |
+| 3 | cara de Pokémon | **habitat** | mapa de Hisui + Favored Conditions |
+
+- A **aba activa é a que está desenhada a escuro/cheia**; as inactivas ficam
+  esbatidas. O badge `A` flutua encostado à esquerda da aba activa, portanto
+  também serve de indicador, mas o mais fiável é o ícone escuro.
+- Painel de conteúdo inteiro (abas incluídas): zona `60, 30, 2740, 2050`.
+
+### Aba 2 — Research Tasks (a que interessa)
+
+Título `Research Tasks for <Pokémon>`. Cada linha é uma tarefa com o **valor
+actual** e os **5 patamares**. Lido ao vivo para o Porygon-Z (research level 2):
+
+| tarefa | actual | patamares | bónus |
+|---|---|---|---|
+| Number caught | 1 | 1 ✓ · 2 · 3 · 4 · 5 | **chevrons vermelhos** |
+| Times you've seen it use Thunderbolt | 0 | 1 · 3 · 6 · 12 · 25 | — |
+| Times you've seen it use Recover | 0 | 1 · 3 · 6 · 12 · 25 | — |
+| Times you've seen it use Hyper Beam | 0 | 1 · 3 · 8 · 20 · 40 | **chevrons vermelhos** |
+| Times you've seen it use a strong style move | 0 | 1 · 3 · 6 · 12 · 25 | — |
+| Times you've seen it use an agile style move | 0 | 1 · 3 · 6 · 12 · 25 | — |
+
+- O patamar já atingido leva um **visto vermelho**; os restantes ficam em
+  amarelo claro.
+- Algumas linhas têm um **ícone de chevrons vermelhos duplos** à esquerda
+  (aqui: Number caught e Hyper Beam). Presumo que marquem tarefa que vale
+  mais pontos — **a confirmar com ele**, não assumir.
+- Abaixo das tarefas preenchidas ficam **checkboxes vazias** (tarefas ainda
+  não reveladas para este Pokémon).
+- O **Research Level** aparece em baixo à direita, com barra e número
+  (Porygon-Z: 2). Os patamares mais altos de cada tarefa são a diferença entre
+  chegar a 10 ou não.
+- Os patamares **não são iguais para todas as tarefas** — o Hyper Beam ia a 40
+  e os outros movimentos a 25. Ler os números do ecrã, não assumir uma tabela.
+
+### Nota operacional sobre o `/zone`
+
+O recorte que o `/zone` devolve é **do momento em que a seleção foi feita**,
+não é live: apanhei a barra das abas a mostrar a aba 2 quando o ecrã já estava
+na 3. Para ver o estado actual usar `/shot?zone=…`; o `/zone` serve para saber
+*onde* ele está a apontar.
+
 ## Por esclarecer (perguntar ou esperar que ele diga)
 
 - Que jogo/versão exactamente, e onde está no jogo (Alabaster Icelands é Hisui,
   parece Legends: Arceus — confirmar em vez de assumir).
-- O que contam os três contadores do topo.
+- O que contam os três contadores do topo (vi `91/91/76` com o filtro numa
+  área e `242/242/188` em Entire Hisui Region, logo são por filtro).
+- Se os chevrons vermelhos duplos são mesmo bónus de pontos.
 - Que tarefas de investigação contam para cada Pokémon e quais compensa
   automatizar (capturas? derrotas? usar movimentos? alimentar?).
 - Como decidir a ordem: por área, por research level actual, por proximidade?
