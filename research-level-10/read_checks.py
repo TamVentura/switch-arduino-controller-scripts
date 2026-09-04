@@ -23,6 +23,12 @@ que se desce e mais acima a cada coluna que se avança. Por isso nada aqui usa
 uma grelha fixa — as linhas e as colunas saem sempre dos próprios pixels dos
 pills, e só depois se pergunta, célula a célula, se lá está o vermelho do
 visto.
+
+Os números não passam pelo Tesseract: glifo a glifo ele devolve vazio num `0`
+isolado, e a coluna toda de uma vez funde linhas iguais (quatro `1` seguidos
+vinham como um só). Como a fonte é fixa, comparam-se os glifos com templates
+(`digits.json`). Um glifo que não case com nada é guardado em `unknown_digits/`
+em PNG e .npy, para se rotular e recalcular o valor sem voltar ao jogo.
 """
 
 from __future__ import annotations
@@ -49,7 +55,10 @@ from PIL import Image  # noqa: E402
 SERVER = "http://127.0.0.1:8777"
 SHOT_PNG = os.path.join(_HERE, "..", "free-play", "shots", "latest.png")
 OUT_JSON = os.path.join(_HERE, "checks.json")
-OUT_KEYS = ("mon", "name_ocr", "name_score", "research_level", "complete", "checks")
+OUT_KEYS = (
+    "mon", "name_ocr", "name_score", "research_level", "complete",
+    "checks", "values",
+)
 FAIL_DIR = os.path.join(_HERE, "failed")
 DEX_INDEX = r"C:\Projects\pla-dex-data\data\index.json"
 
@@ -83,6 +92,22 @@ BADGE_BOX = (3508, -110, 3646, 110)
 BADGE_HEX = "#e8443f"
 BADGE_TOL = 45
 BADGE_MIN_RATIO = 0.02  # com pokébola dá ~0.06, sem dá 0.0000
+
+# Coluna do valor actual de cada tarefa, à esquerda dos pills. Não se lê com
+# Tesseract: glifo a glifo ele devolve vazio num `0` isolado, e a coluna toda
+# de uma vez funde linhas iguais (quatro `1` seguidos vinham como um só). Como
+# a fonte é fixa e os glifos são pixel-idênticos entre ocorrências (variam no
+# máximo 5% dos pixels, contra 23% de distância entre dígitos diferentes),
+# usam-se templates — determinístico e com margem de sobra.
+VALUE_X = (1488, 1720)
+VALUE_PAD = 10       # folga em y para o glifo caber na banda da linha
+DIGIT_AREA_MIN = 40  # um dígito medido dá 73-157; os pontinhos ficam abaixo
+DIGIT_H = (14, 34)   # altura de um dígito, a 1080
+DIGIT_MAX_DIST = 0.12   # pior intra-classe medido: 0.048
+DIGIT_MIN_MARGIN = 2.0  # o 2º melhor tem de estar ao menos 2x mais longe
+DIGITS_JSON = os.path.join(_HERE, "digits.json")
+UNKNOWN_DIR = os.path.join(_HERE, "unknown_digits")
+LEVEL_MIN_AREA = 100  # área mínima de um dígito do research level
 
 CHECK_HEX = "#e5474c"  # o visto vermelho
 CHECK_TOL = 34
@@ -232,7 +257,7 @@ def read_tasks(im: np.ndarray) -> dict:
     panel = capture.get_frame_region(*PANEL, frame=im)
     grid = cell_grid(panel)
 
-    checks, cells, bonus = [], [], []
+    checks, cells, bonus, bands = [], [], [], []
     for row in grid:
         done = [
             has_color(im, _to4k(panel, c), CHECK_HEX, CHECK_TOL, CHECK_MIN_RATIO)
@@ -242,11 +267,107 @@ def read_tasks(im: np.ndarray) -> dict:
         cells.append(len(row))
         y1, y2 = row[0][1], row[0][3]
         bx = _to4k(panel, (0, y1, 0, y2))
+        bands.append((bx[1], bx[3]))
         bonus.append(
             has_color(im, (BONUS_X[0], bx[1], BONUS_X[1], bx[3]), BONUS_HEX, CHECK_TOL, 0.2)
         )
 
-    return {"checks": checks, "cells": cells, "bonus": bonus, "n_tasks": len(grid)}
+    return {
+        "checks": checks,
+        "cells": cells,
+        "bonus": bonus,
+        "bands": bands,
+        "n_tasks": len(grid),
+    }
+
+
+_dj = json.load(open(DIGITS_JSON, encoding="utf-8"))
+DIGIT_SIZE = tuple(_dj["size"])  # (largura, altura) do bitmap normalizado
+TEMPLATES = {
+    int(d): np.array([c == "1" for c in bits]).reshape(
+        DIGIT_SIZE[1], DIGIT_SIZE[0]
+    )
+    for d, bits in _dj["templates"].items()
+}
+
+
+def row_glyphs(im: np.ndarray, y1: int, y2: int) -> list[np.ndarray]:
+    """Bitmaps normalizados dos dígitos de uma linha, da esquerda para a direita.
+
+    Os glifos são o azul-marinho do texto; a barra separadora e os pontinhos
+    das linhas ficam de fora por serem claros.
+    """
+    crop = capture.get_frame_region(
+        VALUE_X[0], y1 - VALUE_PAD, VALUE_X[1], y2 + VALUE_PAD, frame=im
+    )
+    if crop.size == 0:
+        return []
+    b, g, r = (crop[:, :, k].astype(int) for k in range(3))
+    dark = ((r < 140) & (g < 140) & (b < 160)).astype(np.uint8)
+    n, _, stats, _ = cv2.connectedComponentsWithStats(dark, 8)
+    found = sorted(
+        (
+            stats[i]
+            for i in range(1, n)
+            if stats[i][4] >= DIGIT_AREA_MIN and DIGIT_H[0] <= stats[i][3] <= DIGIT_H[1]
+        ),
+        key=lambda st: st[0],
+    )
+    out = []
+    for x, y, w, h, _a in found:
+        bm = dark[y : y + h, x : x + w].astype(np.uint8) * 255
+        out.append(cv2.resize(bm, DIGIT_SIZE, interpolation=cv2.INTER_AREA) > 127)
+    return out
+
+
+def classify_digit(bm: np.ndarray) -> int | None:
+    """O dígito mais parecido, ou None se não houver um vencedor claro."""
+    dists = sorted((float((bm != t).mean()), d) for d, t in TEMPLATES.items())
+    best, digit = dists[0]
+    if best > DIGIT_MAX_DIST:
+        return None
+    if len(dists) > 1 and dists[1][0] < best * DIGIT_MIN_MARGIN:
+        return None
+    return digit
+
+
+def read_values(im: np.ndarray, bands: list[tuple[int, int]]) -> tuple[list, list]:
+    """O valor actual de cada tarefa, e os glifos que não soube classificar.
+
+    Os glifos por classificar vão para fora para serem guardados e rotulados
+    depois, sem obrigar a outra passagem pelo jogo.
+    """
+    values, unknown = [], []
+    for i, (y1, y2) in enumerate(bands):
+        glyphs = row_glyphs(im, y1, y2)
+        digits = [classify_digit(bm) for bm in glyphs]
+        if not glyphs or any(d is None for d in digits):
+            values.append(None)
+            unknown.extend(
+                (i + 1, k, bm) for k, (bm, d) in enumerate(zip(glyphs, digits))
+                if d is None
+            )
+        else:
+            values.append(int("".join(str(d) for d in digits)))
+    return values, unknown
+
+
+def read_level(im: np.ndarray) -> int | None:
+    """O número do Research Level, achando primeiro a caixa dos dígitos."""
+    box = capture.get_frame_region(*LEVEL_BOX, frame=im)
+    b, g, r = (box[:, :, i].astype(int) for i in range(3))
+    dark = ((r < 140) & (g < 140) & (b < 160)).astype(np.uint8)
+    n, _, stats, _ = cv2.connectedComponentsWithStats(dark, 8)
+    digits = [stats[i] for i in range(1, n) if stats[i][4] > LEVEL_MIN_AREA]
+    if not digits:
+        return None
+    pad = 6
+    x1 = max(0, min(d[0] for d in digits) - pad)
+    y1 = max(0, min(d[1] for d in digits) - pad)
+    x2 = max(d[0] + d[2] for d in digits) + pad
+    y2 = max(d[1] + d[3] for d in digits) + pad
+    txt = _ocr(box[y1:y2, x1:x2], "0123456789", tesserocr.PSM.SINGLE_WORD)
+    return int(txt) if txt.isdigit() and 1 <= int(txt) <= 10 else None
 
 
 def count_check_blobs(im: np.ndarray) -> list[int]:
@@ -291,24 +412,6 @@ def read_list(im: np.ndarray) -> dict:
     return {"row": sel + 1, "name_ocr": name, "badge": badge}
 
 
-def read_level(im: np.ndarray) -> int | None:
-    """O número do Research Level, achando primeiro a caixa dos dígitos."""
-    box = capture.get_frame_region(*LEVEL_BOX, frame=im)
-    b, g, r = (box[:, :, i].astype(int) for i in range(3))
-    dark = ((r < 140) & (g < 140) & (b < 160)).astype(np.uint8)
-    n, _, stats, _ = cv2.connectedComponentsWithStats(dark, 8)
-    digits = [stats[i] for i in range(1, n) if stats[i][4] > 100]
-    if not digits:
-        return None
-    pad = 6
-    x1 = max(0, min(d[0] for d in digits) - pad)
-    y1 = max(0, min(d[1] for d in digits) - pad)
-    x2 = max(d[0] + d[2] for d in digits) + pad
-    y2 = max(d[1] + d[3] for d in digits) + pad
-    txt = _ocr(box[y1:y2, x1:x2], "0123456789", tesserocr.PSM.SINGLE_WORD)
-    return int(txt) if txt.isdigit() and 1 <= int(txt) <= 10 else None
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 # Nomes: fuzzy match contra a dex do game8
 # ─────────────────────────────────────────────────────────────────────────────
@@ -338,6 +441,7 @@ def match_name(raw: str) -> tuple[str | None, float]:
 def read_mon(im: np.ndarray) -> dict:
     lst = read_list(im)
     tasks = read_tasks(im)
+    values, unknown = read_values(im, tasks["bands"])
     level = read_level(im)
     name, score = match_name(lst["name_ocr"])
 
@@ -348,6 +452,20 @@ def read_mon(im: np.ndarray) -> dict:
         problems.append(f"{tasks['n_tasks']} tarefas (o game8 tem no máximo 9)")
     if any(c > 5 for c in tasks["cells"]):
         problems.append(f"células por linha fora do esperado: {tasks['cells']}")
+
+    if unknown:
+        problems.append(
+            "dígitos por rotular nas linhas "
+            f"{sorted({row for row, _pos, _bm in unknown})}"
+        )
+    # com k passos feitos o valor já passou o patamar k, logo é >= k
+    low = [
+        i + 1
+        for i, (v, c) in enumerate(zip(values, tasks["checks"]))
+        if v is not None and v < c
+    ]
+    if low:
+        problems.append(f"valor menor que os checks nas linhas {low}")
 
     blobs = count_check_blobs(im)
     if blobs != tasks["checks"]:
@@ -371,7 +489,9 @@ def read_mon(im: np.ndarray) -> dict:
         "research_level": level,
         "complete": lst["badge"],
         "list_row": lst["row"],
+        "unknown_digits": unknown,
         "checks": tasks["checks"],
+        "values": values,
         "cells": tasks["cells"],
         "problems": problems,
     }
@@ -390,10 +510,27 @@ def panel_key(im: np.ndarray) -> bytes:
 
 
 def _fmt(r: dict) -> str:
-    cells = " ".join(str(c) for c in r["checks"])
+    cells = " ".join(
+        f"{v if v is not None else '?'}:{c}" for c, v in zip(r["checks"], r["values"])
+    )
     tag = " COMPLETO" if r["complete"] else ""
     bad = ("  !! " + "; ".join(r["problems"])) if r["problems"] else ""
     return f"{str(r['mon']):20} lvl {str(r['research_level']):>2}{tag}  [{cells}]{bad}"
+
+
+def _dump_unknown(r: dict) -> None:
+    """Guarda os glifos que o matcher não reconheceu, para eu os rotular.
+
+    Ficam em PNG (para se ver que dígito é) e em .npy (para se recalcular o
+    valor sem ter de voltar ao jogo).
+    """
+    if not r.get("unknown_digits"):
+        return
+    os.makedirs(UNKNOWN_DIR, exist_ok=True)
+    for row, pos, bm in r["unknown_digits"]:
+        stem = os.path.join(UNKNOWN_DIR, f"{r['mon']}-L{row}-{pos}")
+        cv2.imwrite(stem + ".png", bm.astype(np.uint8) * 255)
+        np.save(stem + ".npy", bm)
 
 
 def _save(results: list[dict]) -> None:
@@ -412,6 +549,8 @@ def main() -> None:
 
     if args.shot:
         im = cv2.imread(args.shot)
+        if im is None:
+            raise SystemExit(f"não consegui ler {args.shot}")
         r = read_mon(im)
         print(_fmt(r))
         print(json.dumps({k: r[k] for k in OUT_KEYS}, ensure_ascii=False))
@@ -477,6 +616,7 @@ def _walk(args, results: list[dict], seen: set[bytes]) -> None:
                 cv2.imwrite(path, im)
                 r = again
                 r["shot"] = path
+        _dump_unknown(r)
 
         if r["complete"]:
             print(f"     {r['mon']} já tem pokébola — a lista está ordenada por "

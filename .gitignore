@@ -6,3 +6,7 @@ map_pan_*.png
 
 # free-play — screenshots que o Claude tira durante a sessao.
 free-play/shots/
+
+# research-level-10: diagnóstico das leituras, não é resultado
+research-level-10/failed/
+research-level-10/unknown_digits/
