@@ -5,7 +5,7 @@ Notas tiradas ao vivo enquanto o Tiago explica o que quer, com a sessão
 informação** — o plano e a implementação são para uma sessão nova, a partir
 deste ficheiro.
 
-Estado: **a recolher**. O Tiago disse que avisa quando estiver tudo e quando
+Estado: **recolha praticamente fechada** — ele disse que já tenho o que preciso. O Tiago disse que avisa quando estiver tudo e quando
 puder começar a pensar em como fazer.
 
 ## Objetivo
@@ -255,6 +255,21 @@ e o **número**. É o research level do **Pokémon selecionado na lista**.
 - Visto ao vivo: Togepi = 3.
 - Contar com **duas casas** quando chegar a 10.
 
+### Ponto de partida: 188 de 242 completos
+
+Ele deu-me isto directamente e disse que **é útil para o que vai querer**:
+**já completou 188 dos 242**. Portanto faltam **54 Pokémon**.
+
+Isto encaixa nos contadores do topo, que em *Entire Hisui Region* estavam em
+`242 / 242 / 188`: o **terceiro (o da Poké Ball vermelha) é o número de
+completos**, e o total da dex de Hisui é 242. Em *Obsidian Fieldlands* estavam
+`85 / 85 / 83`, ou seja o mesmo por região. O que os dois primeiros contam
+exactamente ainda não está confirmado (estão iguais nos dois casos).
+
+**Consequência:** o trabalho não é percorrer 242 — é encontrar e tratar os
+**54 que ainda não têm o badge de Poké Ball na lista**. Qualquer plano deve
+começar por essa listagem, não por varrer tudo.
+
 ### Nota operacional sobre o `/zone`
 
 O recorte que o `/zone` devolve é **do momento em que a seleção foi feita**,
@@ -266,8 +281,8 @@ na 3. Para ver o estado actual usar `/shot?zone=…`; o `/zone` serve para saber
 
 - Que jogo/versão exactamente, e onde está no jogo (Alabaster Icelands é Hisui,
   parece Legends: Arceus — confirmar em vez de assumir).
-- O que contam os três contadores do topo (vi `91/91/76` com o filtro numa
-  área e `242/242/188` em Entire Hisui Region, logo são por filtro).
+- O que contam exactamente os dois primeiros contadores do topo (o terceiro é
+  o de completos). São por região.
 - Que tarefas de investigação contam para cada Pokémon e quais compensa
   automatizar (capturas? derrotas? usar movimentos? alimentar?).
 - Como decidir a ordem: por área, por research level actual, por proximidade?
