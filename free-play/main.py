@@ -33,8 +33,12 @@ from switch import capture, launch  # noqa: E402
 
 import control_server  # noqa: E402
 
-port = sys.argv[1] if len(sys.argv) > 1 else None
-OPEN_TAB = "--no-tab" not in sys.argv
+_args = sys.argv[1:]
+_flags = [a for a in _args if a.startswith("-")]
+_rest = [a for a in _args if not a.startswith("-")]
+
+port = _rest[0] if _rest else None
+OPEN_TAB = "--no-tab" not in _flags
 
 
 def main():

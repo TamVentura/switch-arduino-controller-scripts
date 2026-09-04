@@ -1,0 +1,70 @@
+<!doctype html>
+<meta charset="utf-8"><title>free-play — Claude</title>
+<!--
+  A aba do free-play. Servida do disco a cada pedido pelo control_server, para
+  se poder mexer aqui e ver com um refresh, sem reiniciar a sessão.
+
+  Regra do tamanho: nunca ampliar acima do tamanho natural (max-width/-height,
+  width:auto) — um recorte de 454x713 mostrado a 985 px de largura ficava
+  borrado e mais alto que o ecrã.
+-->
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #14161a; color: #d7dbe0;
+         font: 13px/1.5 ui-monospace, Consolas, monospace; }
+  header { padding: 8px 14px; border-bottom: 1px solid #262a31; color: #8b929c; }
+  .wrap { display: flex; flex-wrap: wrap; gap: 14px; padding: 14px;
+          align-items: flex-start; }
+  section { flex: 1 1 320px; min-width: 0; }
+  h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+       color: #7f8792; margin: 0 0 6px; font-weight: 600; }
+  .meta { color: #6f7681; margin-bottom: 8px; min-height: 1.5em; }
+  /* Encolhe para caber, nunca amplia. */
+  img { max-width: 100%; max-height: calc(100vh - 130px); width: auto; height: auto;
+        border: 1px solid #262a31; border-radius: 4px; background: #0d0f12;
+        display: block; }
+  .empty { padding: 28px 14px; border: 1px dashed #2d323a; border-radius: 4px;
+           color: #5c636d; text-align: center; }
+</style>
+<header>free-play — última screenshot do Claude &amp; última zona selecionada</header>
+<div class="wrap">
+  <section>
+    <h2>Screenshot</h2>
+    <div class="meta" id="shot-meta">à espera do primeiro /shot…</div>
+    <img id="shot" hidden>
+    <div class="empty" id="shot-empty">nada ainda</div>
+  </section>
+  <section>
+    <h2>Zona selecionada</h2>
+    <div class="meta" id="zone-meta">na janela de captura: botão direito, depois clique</div>
+    <img id="zone" hidden>
+    <div class="empty" id="zone-empty">nada ainda</div>
+  </section>
+</div>
+<script>
+let seen = { shot: 0, zone: 0 };
+function show(kind, seq, label) {
+  const img = document.getElementById(kind);
+  document.getElementById(kind + '-meta').textContent = label;
+  img.src = '/' + kind + '.png?v=' + seq;
+  img.hidden = false;
+  document.getElementById(kind + '-empty').hidden = true;
+}
+async function tick() {
+  try {
+    const st = await (await fetch('/status.json', { cache: 'no-store' })).json();
+    if (st.shot.seq > seen.shot) {
+      seen.shot = st.shot.seq;
+      const z = st.shot.zone ? '  zona ' + st.shot.zone.join(', ') : '  ecrã todo';
+      show('shot', st.shot.seq, st.shot.at + '  ' + st.shot.size.join('x') + z);
+    }
+    if (st.zone.seq > seen.zone) {
+      seen.zone = st.zone.seq;
+      show('zone', st.zone.seq, st.zone.at + '  ' + st.zone.size.join('x')
+           + '  (' + st.zone.coords.join(', ') + ')');
+    }
+  } catch (e) { /* servidor fechou */ }
+}
+tick(); setInterval(tick, 700);
+</script>
