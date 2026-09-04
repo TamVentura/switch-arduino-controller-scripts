@@ -212,11 +212,16 @@ O corpo de cada cartão (a lista de sítios) fica logo abaixo da sua barra e
 estende-se ~330 px (4K) para baixo — ex.: o cartão do Cobalt inteiro é
 `1776, 388 – 2508, 810`. Confirmar cartão a cartão antes de usar.
 
-No rodapé, **Favored Conditions**: um grupo de **4 ícones de hora do dia**
-(`1108, 1466 – 1638, 1566`) e um grupo de **7 de meteorologia**
-(`1728, 1446 – 2574, 1554`). No Remoraid apareceram todos realçados; no
-Porygon-Z (sem dados) apareciam todos esbatidos. **A confirmar** o que
-realçado significa.
+No rodapé, **Favored Conditions** — ele explicou: são as **condições em que o
+Pokémon aparece**. Dois grupos:
+
+- **ao centro, a altura do dia** — 4 ícones (`1108, 1466 – 1638, 1566`)
+- **à direita, a meteorologia** — 7 ícones (`1728, 1446 – 2574, 1554`);
+  é *tempo* no sentido de chuva/neve, não de horas
+
+Os ícones **realçados** são as condições que se aplicam; os esbatidos não. No
+Remoraid apareceram os 11 realçados (aparece a qualquer hora e com qualquer
+tempo); no Porygon-Z, que não tem dados, estavam todos esbatidos.
 
 ### Nota operacional sobre o `/zone`
 
