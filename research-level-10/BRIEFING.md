@@ -15,6 +15,31 @@ puder começar a pensar em como fazer.
 - Organizado para **o mínimo de trabalho manual possível** para ele, e **o mais
   rápido possível**.
 
+## O que ele quer construir
+
+Um **site para telemóvel** com as tarefas, para ele **ver o que falta sem ter
+de abrir a dex no jogo**.
+
+Por cada Pokémon, o site tem de mostrar:
+
+- as **tarefas**;
+- os **passos já feitos** (as colunas com visto);
+- que tarefas têm **bónus** (chevrons duplos, 2 pontos por passo);
+- o **número necessário para cada passo** (os patamares, que variam por tarefa
+  e por Pokémon);
+- o **número actual** já feito;
+- **onde se encontra** o Pokémon (a informação da aba do habitat).
+
+Ordem de recolha que ele pediu:
+
+1. **primeiro ler todos os mons que ainda não estão a 10** (os 54 sem badge);
+2. **depois fazer também por zonas**, com o ZL/ZR.
+
+**Ponto importante que ele sublinhou:** os **detalhes de um Pokémon são iguais
+em todas as zonas** — a região é *apenas um filtro* sobre a lista. Logo não há
+que reler as tarefas por região; cada Pokémon lê-se **uma vez**, e a passagem
+pelas zonas serve só para saber **que Pokémon aparece em que zona**.
+
 ## O que já vi no ecrã
 
 Ecrã de trabalho: o **Pokédex**, com o painel de detalhe à esquerda e a
