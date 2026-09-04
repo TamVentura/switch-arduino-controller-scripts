@@ -147,19 +147,29 @@ persistente: um ZL de volta devolveu exactamente Entire Hisui Region + habitat
 nem o cursor** — tem de se voltar a ler os dois. Não dá para "pôr na aba das
 research tasks uma vez e depois andar pelas regiões".
 
-### A faixa de estado — uma leitura só dá tudo
+### Como ler o estado (corrigido por ele)
 
-A zona `60, 30, 3830, 450` (1885x210) apanha, de uma vez:
+**Não ler o título do painel** (`Togepi's Habitat`, `Research Tasks for
+Cherubi`, ...) para saber que Pokémon está em causa. Ele corrigiu-me:
 
-- **qual das 3 abas está activa** (ícone escuro, canto superior esquerdo)
-- os **3 contadores** do topo (mudam com a região)
-- o **título do painel**, que identifica aba *e* Pokémon ao mesmo tempo:
-  `Research Tasks for Cherubi`, `Porygon-Z's Habitat`, ou `No. 135 Porygon-Z`
-  na aba dos dados
-- o **nome da região** e a fila de ícones com o activo sublinhado
+> "na lista tens o mon selecionado para ver qual é e em cima tens a aba
+> aberta. Se estiver na 3ª aba sabes que estás a ver o habitat do pokemon
+> selecionado"
 
-É o recorte a usar para reancorar depois de um ZL/ZR, em vez de várias
-screenshots separadas.
+Portanto o estado são **duas leituras independentes, ambas em posição fixa**:
+
+1. **que Pokémon** → a **linha realçada na lista** à direita (a clara/creme,
+   com o `>` amarelo à esquerda). A posição da linha realçada dentro das 5
+   visíveis varia.
+2. **que vista** → a **aba activa** na barra `80, 36, 716, 222` (ícone escuro).
+   Aba 3 => o painel é o habitat *desse* Pokémon; aba 2 => são as research
+   tasks *desse* Pokémon.
+
+O título é redundante e é texto variável — não vale o custo de o ler.
+
+A faixa `60, 30, 3830, 450` continua útil por trazer numa só screenshot a
+**aba activa**, os **3 contadores** e o **nome da região** — mas o Pokémon
+tira-se da lista, não do título.
 
 ### Segundo exemplo de research tasks — Remoraid
 
