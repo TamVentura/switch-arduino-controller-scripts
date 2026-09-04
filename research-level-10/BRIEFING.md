@@ -114,9 +114,10 @@ actual** e os **5 patamares**. Lido ao vivo para o Porygon-Z (research level 2):
 
 - O patamar já atingido leva um **visto vermelho**; os restantes ficam em
   amarelo claro.
-- Algumas linhas têm um **ícone de chevrons vermelhos duplos** à esquerda
-  (aqui: Number caught e Hyper Beam). Presumo que marquem tarefa que vale
-  mais pontos — **a confirmar com ele**, não assumir.
+- **Confirmado por ele:** as linhas com o **ícone de chevrons vermelhos duplos**
+  à esquerda valem **2 pontos por passo em vez de 1**. Cada **coluna é um
+  passo**, e os passos que já têm visto estão feitos. Logo o valor de uma
+  tarefa não é o número de passos — é passos x 1 ou passos x 2.
 - Abaixo das tarefas preenchidas ficam **checkboxes vazias** (tarefas ainda
   não reveladas para este Pokémon).
 - O **Research Level** aparece em baixo à direita, com barra e número
@@ -160,6 +161,63 @@ A zona `60, 30, 3830, 450` (1885x210) apanha, de uma vez:
 É o recorte a usar para reancorar depois de um ZL/ZR, em vez de várias
 screenshots separadas.
 
+### Segundo exemplo de research tasks — Remoraid
+
+Mais rico que o do Porygon-Z, e mostra que a forma das linhas varia:
+
+| tarefa | actual | passos | vale |
+|---|---|---|---|
+| Number caught | 1 | 1 ✓ · 2 · 4 · 10 · 15 | **x2** |
+| Number you've caught without being spotted | 0 | 1 · 2 · 4 · 6 · 10 | x1 |
+| Number defeated | 0 | 1 · 3 · 6 · 12 · 25 | x1 |
+| Number you've defeated with Grass-type moves | 0 | 1 · 2 · 4 · 6 · 10 | x1 |
+| Times you've seen it use Charge Beam | 0 | 1 · 3 · 6 · 12 · 25 | **x2** |
+| Times you've seen it use Ice Beam | 0 | 1 · 3 · 6 · 12 · 25 | x1 |
+| Number you've evolved | 0 | **só 1 passo, e desenhado na última coluna** | **x2** |
+
+Reparar:
+
+- **não são sempre 5 passos.** O "Number you've evolved" tem um único passo, e
+  aparece encostado à **coluna da direita** — as colunas não são "passo 1 a 5"
+  alinhados; há tarefas com menos passos. Quem ler isto tem de ler os números,
+  não contar colunas.
+- os tipos de tarefa que já vi: **capturar**, **capturar sem ser visto**,
+  **derrotar**, **derrotar com movimentos de um tipo**, **ver usar um movimento
+  concreto**, **ver usar movimento strong/agile style**, **evoluir**.
+- as tarefas e os patamares **mudam de Pokémon para Pokémon** (comparar com o
+  Porygon-Z acima).
+
+## Aba 3 — habitat: onde encontrar o Pokémon
+
+Ele sublinhou que **isto vai ser importante para o que vem a seguir**.
+
+O painel tem **5 cartões, um por região**, em posições fixas, e cada um lista
+os **sítios concretos** onde o Pokémon aparece nessa região, ou diz
+**"Not found here"**. Para o Remoraid: só **Cobalt Coastlands** — *Castaway
+Shore*, *Sand's Reach*, *Tranquility Cove* — e os outros 4 "Not found here".
+
+Layout medido (coords 4K, a partir das barras de título dos cartões, painel
+lido na zona `90, 218, 2660, 1690`):
+
+| cartão | posição | barra de título medida |
+|---|---|---|
+| título do painel (`<Pokémon>'s Habitat`) | topo | `334, 246 – 2366, 394` |
+| **Alabaster Icelands** | cima-esquerda | `190, 426 – 920, 582` |
+| **Cobalt Coastlands** | cima-direita | `1776, 388 – 2508, 504` |
+| **Coronet Highlands** | centro | `996, 698 – 1718, 808` |
+| **Obsidian Fieldlands** | baixo-esquerda | `206, 1000 – 932, 1112` |
+| **Crimson Mirelands** | baixo-direita | `1788, 966 – 2512, 1076` |
+
+O corpo de cada cartão (a lista de sítios) fica logo abaixo da sua barra e
+estende-se ~330 px (4K) para baixo — ex.: o cartão do Cobalt inteiro é
+`1776, 388 – 2508, 810`. Confirmar cartão a cartão antes de usar.
+
+No rodapé, **Favored Conditions**: um grupo de **4 ícones de hora do dia**
+(`1108, 1466 – 1638, 1566`) e um grupo de **7 de meteorologia**
+(`1728, 1446 – 2574, 1554`). No Remoraid apareceram todos realçados; no
+Porygon-Z (sem dados) apareciam todos esbatidos. **A confirmar** o que
+realçado significa.
+
 ### Nota operacional sobre o `/zone`
 
 O recorte que o `/zone` devolve é **do momento em que a seleção foi feita**,
@@ -173,7 +231,6 @@ na 3. Para ver o estado actual usar `/shot?zone=…`; o `/zone` serve para saber
   parece Legends: Arceus — confirmar em vez de assumir).
 - O que contam os três contadores do topo (vi `91/91/76` com o filtro numa
   área e `242/242/188` em Entire Hisui Region, logo são por filtro).
-- Se os chevrons vermelhos duplos são mesmo bónus de pontos.
 - Que tarefas de investigação contam para cada Pokémon e quais compensa
   automatizar (capturas? derrotas? usar movimentos? alimentar?).
 - Como decidir a ordem: por área, por research level actual, por proximidade?
