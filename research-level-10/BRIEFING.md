@@ -42,8 +42,30 @@ Empoleon, Ninetales, Magnemite.
 
 - A **lista vai mudando** — ele disse-o explicitamente e que falamos disso
   mais tarde. Não assumir ordem estável.
-- O filtro de área também muda: já o vi em **Alabaster Icelands** e em
-  **Entire Hisui Region**.
+### Filtro de região (ZL / ZR)
+
+A lista é separada por regiões e o filtro alterna com **ZL** / **ZR** (teclas
+`l` e `r` do Arduino). Entre o `ZL` e o `ZR` há **6 ícones**, com o activo
+sublinhado, e o nome da região aparece na barra logo abaixo.
+
+Ordem, medida ao vivo dando uma volta completa com ZR:
+
+| ZR | região |
+|---|---|
+| 0 | Entire Hisui Region |
+| 1 | Obsidian Fieldlands |
+| 2 | Crimson Mirelands |
+| 3 | Cobalt Coastlands |
+| 4 | Coronet Highlands |
+| 5 | Alabaster Icelands |
+| 6 | wrap — volta a Entire Hisui Region |
+
+- **Dá wrap nos dois sentidos**: com ZL, de "Entire Hisui Region" salta para
+  "Alabaster Icelands". Confirmado.
+- São 6 posições, logo **6 pressões de ZR voltam ao mesmo sítio** — dá para
+  reancorar o filtro sem saber onde estava, ou para o repor depois de mexer.
+- O nome da região lê-se na zona `2750, 336, 3810, 420` (só a barra do nome,
+  530x42 — barato de ler). A fila de ícones + nome é `2750, 136, 3810, 442`.
 
 ### Como se vê que um Pokémon está completo
 
