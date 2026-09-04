@@ -65,6 +65,7 @@ _DIR = os.path.dirname(os.path.abspath(__file__))
 _DEFAULTS = {
     "com_port": None,
     "start_box": 13,
+    "plan_file": None,
     "dpad_gap": nav.DPAD_GAP,
     "a_gap": 0.25,
     "flash_timeout": 90.0,
@@ -185,7 +186,70 @@ def _trade_current_slot() -> None:
 # ---------------------------------------------------------------------------
 # Main loop
 # ---------------------------------------------------------------------------
+def _load_plan() -> dict[int, list[tuple[int, int]]] | None:
+    """The hand-checked list of slots to trade, per box, if one is configured.
+
+    Running from a written-down plan rather than from what the screen says is
+    the safer first outing: the slots were read off captures and eyeballed, so a
+    misread cannot send a Pokemon nobody asked to trade.  The live scan still
+    runs on every page and any disagreement is reported -- which is how the
+    detector earns its way into being trusted on later runs.
+    """
+    name = CFG.get("plan_file")
+    if not name:
+        return None
+    with open(os.path.join(_DIR, name), encoding="utf-8") as f:
+        raw = json.load(f)["boxes"]
+    return {int(box): [tuple(cell) for cell in cells] for box, cells in raw.items()}
+
+
+def _run_planned(plan: dict[int, list[tuple[int, int]]]) -> None:
+    traded = 0
+    boxes = sorted(plan)
+    notifier.send_message(
+        f"Z-A dex filler: plano fixo, caixas {boxes[0]}-{boxes[-1]}, "
+        f"{sum(len(c) for c in plan.values())} trocas. Abre o Link Trade na caixa {boxes[0]}."
+    )
+    _wait_for_box_screen(timeout=30.0)
+
+    for box in boxes:
+        _park()
+        seen = sorted(v.scan_page(_frame()))
+        want = plan[box]
+        if seen != sorted(want):
+            print(f"{Fore.YELLOW}Caixa {box}: plano {want} mas o ecra mostra {seen}"
+                  f"{Style.RESET_ALL}")
+            notifier.send_message(
+                f"Caixa {box}: plano {want}, ecra {seen}. A seguir o plano."
+            )
+        else:
+            print(f"{Fore.CYAN}Caixa {box}:{Style.RESET_ALL} {want} (confere com o ecra)")
+
+        for cell in want:
+            if CFG["max_trades"] and traded >= CFG["max_trades"]:
+                notifier.send_message(f"Limite de {CFG['max_trades']} trocas atingido.")
+                return
+            nav.goto(cell, _read_cursor, _press)
+            print(f"  trocar {cell}")
+            _trade_current_slot()
+            traded += 1
+
+        notifier.send_message(f"Caixa {box} feita. Total {traded}.")
+        _park()
+        click("R", sleep=0.6)
+
+    notifier.send_message(
+        f"Plano concluido: {traded} trocas. O jogo so mostra 5 cracha por caixa, "
+        f"por isso e provavel que falte outra passagem."
+    )
+
+
 def main() -> None:
+    plan = _load_plan()
+    if plan:
+        _run_planned(plan)
+        return
+
     box = CFG["start_box"]
     traded = 0
 

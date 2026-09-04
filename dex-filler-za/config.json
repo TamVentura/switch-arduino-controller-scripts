@@ -7,5 +7,6 @@
   "return_timeout": 240.0,
   "poll_interval": 0.05,
   "settle": 0.35,
-  "max_trades": 0
+  "max_trades": 0,
+  "plan_file": "plan.json"
 }
