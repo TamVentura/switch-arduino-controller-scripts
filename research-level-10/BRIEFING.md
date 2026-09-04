@@ -125,6 +125,41 @@ actual** e os **5 patamares**. Lido ao vivo para o Porygon-Z (research level 2):
 - Os patamares **não são iguais para todas as tarefas** — o Hyper Beam ia a 40
   e os outros movimentos a 25. Ler os números do ecrã, não assumir uma tabela.
 
+### ⚠️ Cada região guarda o seu próprio estado
+
+Ele avisou-me disto e confirmei ao vivo. **O filtro de região não é só um
+filtro da lista: cada posição guarda o seu próprio contexto.** Uma pressão de
+ZR levou-me de
+
+| | antes | depois de 1x ZR |
+|---|---|---|
+| região | Entire Hisui Region | Obsidian Fieldlands |
+| aba activa | 3 — habitat | **2 — Research Tasks** |
+| Pokémon | Porygon-Z | **Cherubi** |
+| contadores | 242 / 242 / 188 | 85 / 85 / 83 |
+
+Ou seja, **cada região lembra-se da aba e do Pokémon onde ficou**. E é
+persistente: um ZL de volta devolveu exactamente Entire Hisui Region + habitat
++ Porygon-Z.
+
+**Consequência para o plano:** depois de qualquer ZL/ZR **nunca assumir a aba
+nem o cursor** — tem de se voltar a ler os dois. Não dá para "pôr na aba das
+research tasks uma vez e depois andar pelas regiões".
+
+### A faixa de estado — uma leitura só dá tudo
+
+A zona `60, 30, 3830, 450` (1885x210) apanha, de uma vez:
+
+- **qual das 3 abas está activa** (ícone escuro, canto superior esquerdo)
+- os **3 contadores** do topo (mudam com a região)
+- o **título do painel**, que identifica aba *e* Pokémon ao mesmo tempo:
+  `Research Tasks for Cherubi`, `Porygon-Z's Habitat`, ou `No. 135 Porygon-Z`
+  na aba dos dados
+- o **nome da região** e a fila de ícones com o activo sublinhado
+
+É o recorte a usar para reancorar depois de um ZL/ZR, em vez de várias
+screenshots separadas.
+
 ### Nota operacional sobre o `/zone`
 
 O recorte que o `/zone` devolve é **do momento em que a seleção foi feita**,
