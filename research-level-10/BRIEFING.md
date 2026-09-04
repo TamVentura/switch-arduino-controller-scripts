@@ -243,6 +243,18 @@ Distinção no pixel: **activo = preenchido a azul-marinho escuro**;
 **inactivo = cinzento claro**. Ordem dos 4 da hora do dia: amanhecer, dia,
 anoitecer, **noite (lua)**.
 
+### Research level actual — `2074, 1624, 2720, 1868`
+
+Caixa em baixo à direita com o rótulo `Research Level`, uma barra de progresso
+e o **número**. É o research level do **Pokémon selecionado na lista**.
+
+- **Aparece em qualquer das 3 abas** — ele fez questão de o dizer. Logo dá-se
+  para ler sem ter de mudar de aba, e junta-se com a linha realçada da lista
+  para saber "este mon está em X".
+- Confirmado nas screenshots das 3 abas do Porygon-Z: o `2` estava lá em todas.
+- Visto ao vivo: Togepi = 3.
+- Contar com **duas casas** quando chegar a 10.
+
 ### Nota operacional sobre o `/zone`
 
 O recorte que o `/zone` devolve é **do momento em que a seleção foi feita**,
