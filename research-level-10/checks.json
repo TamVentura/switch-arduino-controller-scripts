@@ -1,0 +1,826 @@
+[
+ {
+  "mon": "Porygon-Z",
+  "name_ocr": "Porygon-Z",
+  "name_score": 1.0,
+  "research_level": 2,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Remoraid",
+  "name_ocr": "Remoraid",
+  "name_score": 1.0,
+  "research_level": 2,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Empoleon",
+  "name_ocr": "Empoleon",
+  "name_score": 1.0,
+  "research_level": 2,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Ninetales",
+  "name_ocr": "Ninetales",
+  "name_score": 1.0,
+  "research_level": 2,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Magnemite",
+  "name_ocr": "Magnemite",
+  "name_score": 1.0,
+  "research_level": 2,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Magnezone",
+  "name_ocr": "Magnezone",
+  "name_score": 1.0,
+  "research_level": 2,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Electabuzz",
+  "name_ocr": "Electrode",
+  "name_score": 0.85,
+  "research_level": 2,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Sneasler",
+  "name_ocr": "Sneasler",
+  "name_score": 1.0,
+  "research_level": 2,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Rampardos",
+  "name_ocr": "Rampardos",
+  "name_score": 1.0,
+  "research_level": 2,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Bastiodon",
+  "name_ocr": "Bastiodon",
+  "name_score": 1.0,
+  "research_level": 2,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Hisuian Typhlosion",
+  "name_ocr": "Typhlosion",
+  "name_score": 0.714,
+  "research_level": 3,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   1,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Cherubi",
+  "name_ocr": "Cherubi",
+  "name_score": 1.0,
+  "research_level": 3,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   1,
+   0
+  ]
+ },
+ {
+  "mon": "Togepi",
+  "name_ocr": "Togepi",
+  "name_score": 1.0,
+  "research_level": 3,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   0,
+   1,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Skorupi",
+  "name_ocr": "Skorupi",
+  "name_score": 1.0,
+  "research_level": 3,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   1,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Drapion",
+  "name_ocr": "Drapion",
+  "name_score": 1.0,
+  "research_level": 3,
+  "complete": false,
+  "checks": [
+   1,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Chingling",
+  "name_ocr": "Chingling",
+  "name_score": 1.0,
+  "research_level": 3,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   1,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Weavile",
+  "name_ocr": "Weavile",
+  "name_score": 1.0,
+  "research_level": 3,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   1,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Snorunt",
+  "name_ocr": "Snorunt",
+  "name_score": 1.0,
+  "research_level": 3,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   1,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Snover",
+  "name_ocr": "Snover",
+  "name_score": 1.0,
+  "research_level": 3,
+  "complete": false,
+  "checks": [
+   1,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Hisuian Decidueye",
+  "name_ocr": "Decidueye",
+  "name_score": 0.692,
+  "research_level": 4,
+  "complete": false,
+  "checks": [
+   2,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Overqwil",
+  "name_ocr": "Overquwil",
+  "name_score": 0.941,
+  "research_level": 4,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   1,
+   0
+  ]
+ },
+ {
+  "mon": "Ursaluna",
+  "name_ocr": "Ursaluna",
+  "name_score": 1.0,
+  "research_level": 4,
+  "complete": false,
+  "checks": [
+   2,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Unown",
+  "name_ocr": "Unown",
+  "name_score": 1.0,
+  "research_level": 4,
+  "complete": false,
+  "checks": [
+   2
+  ]
+ },
+ {
+  "mon": "Sealeo",
+  "name_ocr": "Sealeo",
+  "name_score": 1.0,
+  "research_level": 4,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   2,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Piplup",
+  "name_ocr": "Piplup",
+  "name_score": 1.0,
+  "research_level": 4,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   0,
+   1
+  ]
+ },
+ {
+  "mon": "Mantine",
+  "name_ocr": "Mantine",
+  "name_score": 1.0,
+  "research_level": 4,
+  "complete": false,
+  "checks": [
+   2,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Tentacruel",
+  "name_ocr": "Tentacruel",
+  "name_score": 1.0,
+  "research_level": 4,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   1,
+   0,
+   1,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Lumineon",
+  "name_ocr": "Lumineon",
+  "name_score": 1.0,
+  "research_level": 4,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   1,
+   0,
+   0,
+   0,
+   1,
+   0
+  ]
+ },
+ {
+  "mon": "Magby",
+  "name_ocr": "Magby",
+  "name_score": 1.0,
+  "research_level": 4,
+  "complete": false,
+  "checks": [
+   2,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Magmortar",
+  "name_ocr": "Magmortar",
+  "name_score": 1.0,
+  "research_level": 4,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   1,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Probopass",
+  "name_ocr": "Probopass",
+  "name_score": 1.0,
+  "research_level": 4,
+  "complete": false,
+  "checks": [
+   1,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Riolu",
+  "name_ocr": "Riolu",
+  "name_score": 1.0,
+  "research_level": 4,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   0,
+   0,
+   1
+  ]
+ },
+ {
+  "mon": "Regigigas",
+  "name_ocr": "Regigigas",
+  "name_score": 1.0,
+  "research_level": 4,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   1,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Rhydon",
+  "name_ocr": "Rhydon",
+  "name_score": 1.0,
+  "research_level": 5,
+  "complete": false,
+  "checks": [
+   1,
+   2,
+   1,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Spiritomb",
+  "name_ocr": "Spiritomb",
+  "name_score": 1.0,
+  "research_level": 5,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   1,
+   1
+  ]
+ },
+ {
+  "mon": "Duskull",
+  "name_ocr": "Duskull",
+  "name_score": 1.0,
+  "research_level": 5,
+  "complete": false,
+  "checks": [
+   1,
+   1,
+   1,
+   1,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Magmar",
+  "name_ocr": "Magmar",
+  "name_score": 1.0,
+  "research_level": 5,
+  "complete": false,
+  "checks": [
+   1,
+   1,
+   0,
+   0,
+   0,
+   0,
+   1
+  ]
+ },
+ {
+  "mon": "Hisuian Voltorb",
+  "name_ocr": "Voltorb",
+  "name_score": 0.636,
+  "research_level": 5,
+  "complete": false,
+  "checks": [
+   1,
+   1,
+   0,
+   0,
+   0,
+   0,
+   1
+  ]
+ },
+ {
+  "mon": "Mamoswine",
+  "name_ocr": "Mamoswine",
+  "name_score": 1.0,
+  "research_level": 5,
+  "complete": false,
+  "checks": [
+   1,
+   1,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Rufflet",
+  "name_ocr": "Rufflet",
+  "name_score": 1.0,
+  "research_level": 5,
+  "complete": false,
+  "checks": [
+   1,
+   1,
+   1,
+   0,
+   1,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Rowlet",
+  "name_ocr": "Rowlet",
+  "name_score": 1.0,
+  "research_level": 6,
+  "complete": false,
+  "checks": [
+   2,
+   0,
+   0,
+   0,
+   0,
+   0,
+   1
+  ]
+ },
+ {
+  "mon": "Octillery",
+  "name_ocr": "Octillery",
+  "name_score": 1.0,
+  "research_level": 6,
+  "complete": false,
+  "checks": [
+   2,
+   1,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Hisuian Growlithe",
+  "name_ocr": "Growlithe",
+  "name_score": 0.692,
+  "research_level": 6,
+  "complete": false,
+  "checks": [
+   1,
+   2,
+   0,
+   0,
+   0,
+   0,
+   0,
+   1
+  ]
+ },
+ {
+  "mon": "Prinplup",
+  "name_ocr": "Prinplup",
+  "name_score": 1.0,
+  "research_level": 6,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   0,
+   0,
+   2
+  ]
+ },
+ {
+  "mon": "Mantyke",
+  "name_ocr": "Mantyke",
+  "name_score": 1.0,
+  "research_level": 6,
+  "complete": false,
+  "checks": [
+   2,
+   0,
+   2,
+   0,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Magneton",
+  "name_ocr": "Magneton",
+  "name_score": 1.0,
+  "research_level": 6,
+  "complete": false,
+  "checks": [
+   2,
+   0,
+   0,
+   0,
+   1
+  ]
+ },
+ {
+  "mon": "Chimecho",
+  "name_ocr": "Chimecho",
+  "name_score": 1.0,
+  "research_level": 6,
+  "complete": false,
+  "checks": [
+   2,
+   0,
+   1,
+   0,
+   0,
+   0,
+   1,
+   0
+  ]
+ },
+ {
+  "mon": "Hisuian Avalugg",
+  "name_ocr": "Avalugg",
+  "name_score": 0.636,
+  "research_level": 6,
+  "complete": false,
+  "checks": [
+   2,
+   0,
+   0,
+   0,
+   1,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Abomasnow",
+  "name_ocr": "Abomasnow",
+  "name_score": 1.0,
+  "research_level": 6,
+  "complete": false,
+  "checks": [
+   1,
+   0,
+   1,
+   1,
+   2,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Hisuian Braviary",
+  "name_ocr": "Braviary",
+  "name_score": 0.667,
+  "research_level": 6,
+  "complete": false,
+  "checks": [
+   1,
+   1,
+   1,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Manaphy",
+  "name_ocr": "Manaphy",
+  "name_score": 1.0,
+  "research_level": 6,
+  "complete": false,
+  "checks": [
+   1,
+   2,
+   0,
+   0,
+   1
+  ]
+ },
+ {
+  "mon": "Porygon",
+  "name_ocr": "Porygon",
+  "name_score": 1.0,
+  "research_level": 7,
+  "complete": false,
+  "checks": [
+   3,
+   1,
+   0,
+   0,
+   0
+  ]
+ },
+ {
+  "mon": "Porygon2",
+  "name_ocr": "Porygon2",
+  "name_score": 1.0,
+  "research_level": 7,
+  "complete": false,
+  "checks": [
+   1,
+   1,
+   1,
+   1
+  ]
+ },
+ {
+  "mon": "Elekid",
+  "name_ocr": "Elekid",
+  "name_score": 1.0,
+  "research_level": 7,
+  "complete": false,
+  "checks": [
+   2,
+   1,
+   0,
+   0,
+   0,
+   1
+  ]
+ }
+]

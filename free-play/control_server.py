@@ -81,8 +81,12 @@ def _parse_zone(raw: str | None):
     return tuple(int(p) for p in parts)
 
 
-def take_shot(zone=None) -> dict:
-    """Grab the latest frame (optionally just a zone) and save it for the tab."""
+def take_shot(zone=None, keep=True) -> dict:
+    """Grab the latest frame (optionally just a zone) and save it for the tab.
+
+    With keep=False only latest.png is written — for a script that shoots in a
+    loop and would otherwise bury shots/ in thousands of timestamped files.
+    """
     frame = capture.get_latest_frame()
     if zone is not None:
         x1, y1, x2, y2 = zone
@@ -90,8 +94,9 @@ def take_shot(zone=None) -> dict:
         if frame.size == 0:
             raise ValueError(f"zone {zone} is empty at this resolution")
     os.makedirs(SHOTS_DIR, exist_ok=True)
-    name = f"{time.strftime('%Y%m%d-%H%M%S')}.png"
-    _write_png(os.path.join(SHOTS_DIR, name), frame)
+    name = f"{time.strftime('%Y%m%d-%H%M%S')}.png" if keep else "latest.png"
+    if keep:
+        _write_png(os.path.join(SHOTS_DIR, name), frame)
     _write_png(_LATEST_PNG, frame)
     h, w = frame.shape[:2]
     with _state_lock:
@@ -157,7 +162,7 @@ def stick(side: str, x: float, y: float, secs: float) -> None:
 _USAGE = """free-play control server
 
   GET /                                    a aba com a ultima screenshot
-  GET /shot[?zone=x1,y1,x2,y2|last]        tira screenshot, devolve o ficheiro
+  GET /shot[?zone=…][&keep=0]              tira screenshot (keep=0 nao arquiva)
   GET /zone                                guarda o ultimo recorte selecionado
   GET /press?keys=A,4&sleep=0.4&repeat=1   sequencia de botoes
   GET /hold?key=w&secs=0.6                 segura um botao
@@ -229,7 +234,8 @@ class _Handler(BaseHTTPRequestHandler):
 
         elif path == "/shot":
             zone = _parse_zone(q.get("zone"))
-            st = take_shot(zone)
+            keep = q.get("keep", "1") not in ("0", "false", "no")
+            st = take_shot(zone, keep=keep)
             where = f" zona {st['zone']}" if st["zone"] else ""
             _echo(f"screenshot{where} -> shots/{st['name']}")
             self._text(
