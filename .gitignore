@@ -3,3 +3,6 @@ screenshots/
 tera-raid-farmer/calib_frames/
 **/__pycache__/
 map_pan_*.png
+
+# free-play — screenshots que o Claude tira durante a sessao.
+free-play/shots/

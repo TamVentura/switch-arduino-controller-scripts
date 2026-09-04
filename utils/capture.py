@@ -78,6 +78,9 @@ _selection_start: tuple[int, int] | None = (
 )
 _selection_current = None  # (fx, fy) source-pixel coords of current mouse pos
 _selection_crop = None  # in-memory BGR crop of the last completed selection
+_selection_coords: tuple[int, int, int, int] | None = (
+    None  # (x1, y1, x2, y2) 4K coords of the last completed selection
+)
 _selection_lock = threading.Lock()
 
 _space_press_callbacks: list = []
@@ -141,7 +144,7 @@ _KB_MAP = {
 
 def _finish_selection(corner2_fx, corner2_fy):
     """Finalise the active selection: print coords, copy to clipboard, hold crop in memory."""
-    global _selection_start, _selection_current, _selection_crop
+    global _selection_start, _selection_current, _selection_crop, _selection_coords
     with _selection_lock:
         start = _selection_start
     if start is None:
@@ -154,6 +157,7 @@ def _finish_selection(corner2_fx, corner2_fy):
     with _selection_lock:
         _selection_start = None
         _selection_current = None
+        _selection_coords = (lx1, ly1, lx2, ly2)
     text = f"{lx1}, {ly1}, {lx2}, {ly2}"
     print(f"{Fore.GREEN}Selection:{Style.RESET_ALL} {text}  (press f to save crop)")
     try:
@@ -545,6 +549,19 @@ def unregister_window_toggle_callback(cb) -> None:
             _window_toggle_callbacks.remove(cb)
         except ValueError:
             pass
+
+
+def get_last_selection():
+    """Return ((x1, y1, x2, y2), crop) for the last completed zone selection.
+
+    Coordinates are in the 4K space the selection was printed in, so they can
+    be fed straight back into get_frame_region().  Returns (None, None) if no
+    selection has been completed yet.
+    """
+    with _selection_lock:
+        coords = _selection_coords
+    crop = _selection_crop
+    return coords, (crop.copy() if crop is not None else None)
 
 
 def get_latest_frame():
