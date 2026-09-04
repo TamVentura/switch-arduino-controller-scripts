@@ -35,12 +35,30 @@ Ecrã de trabalho: o **Pokédex**, com o painel de detalhe à esquerda e a
 | o que | zona | notas |
 |---|---|---|
 | lista de Pokémon (direita) | `2814, 444, 3722, 1870` | 454x713 no recorte; mostra **5 entradas** |
+| lista + filtro + rodapé | `2788, 268, 3806, 2018` | 509x875; inclui o filtro de área no topo e o "Y — ordered by research level" em baixo |
 
 Exemplo de leitura da lista (cursor na 2ª de 5): Porygon-Z, **Remoraid**,
 Empoleon, Ninetales, Magnemite.
 
 - A **lista vai mudando** — ele disse-o explicitamente e que falamos disso
   mais tarde. Não assumir ordem estável.
+- O filtro de área também muda: já o vi em **Alabaster Icelands** e em
+  **Entire Hisui Region**.
+
+### Como se vê que um Pokémon está completo
+
+**Um ícone de Poké Ball no lado direito da linha.** Ele apontou-me isto
+directamente: numa lista de 5, o Elekid (incompleto) não tinha o ícone e os
+outros 4 (Dartrix, Cyndaquil, Quilava, Oshawott) tinham. Confere com uma
+leitura anterior, onde Bidoof/Bibarel tinham e Abomasnow/Braviary/Elekid não.
+
+Medido no recorte `2788, 268, 3806, 2018` (509x875, escala 2.0 para 4K):
+
+- o badge está sempre na **mesma coluna**: x ≈ **3574** em coords 4K
+- **passo entre linhas: 280** em coords 4K (as 4 bolas saíram em
+  y = 852, 1132, 1412, 1692; a linha do Elekid, sem bola, seria y ≈ 572)
+- **cuidado:** filtrar vermelho na linha toda dá falso positivo no *sprite*
+  do Pokémon (apanhei um em x ≈ 2976). Ler só a coluna do badge.
 
 ## Por esclarecer (perguntar ou esperar que ele diga)
 
