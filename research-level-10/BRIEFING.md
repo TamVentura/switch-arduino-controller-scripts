@@ -219,9 +219,19 @@ Pokémon aparece**. Dois grupos:
 - **à direita, a meteorologia** — 7 ícones (`1728, 1446 – 2574, 1554`);
   é *tempo* no sentido de chuva/neve, não de horas
 
-Os ícones **realçados** são as condições que se aplicam; os esbatidos não. No
-Remoraid apareceram os 11 realçados (aparece a qualquer hora e com qualquer
-tempo); no Porygon-Z, que não tem dados, estavam todos esbatidos.
+Os ícones **realçados** são as condições que se aplicam; os esbatidos não.
+Leitura calibrada com dois casos que ele me deu:
+
+- **Remoraid** — os 11 realçados: qualquer hora, qualquer tempo.
+- **Togepi** — ele disse-me que *não aparece à noite*, e confere: o **4º ícone
+  da hora do dia (a lua) está esbatido** e os outros três preenchidos. Os 7 da
+  meteorologia todos activos.
+- **Porygon-Z**, que não tem dados, tinha os 11 esbatidos — atenção, portanto:
+  "todos esbatidos" pode ser *sem dados*, não "não aparece nunca".
+
+Distinção no pixel: **activo = preenchido a azul-marinho escuro**;
+**inactivo = cinzento claro**. Ordem dos 4 da hora do dia: amanhecer, dia,
+anoitecer, **noite (lua)**.
 
 ### Nota operacional sobre o `/zone`
 
