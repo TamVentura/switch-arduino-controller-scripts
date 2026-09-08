@@ -50,6 +50,7 @@ Top texts:
 
 saved_recipes = {
     "item": {
+        "name": "Items",
         "recipe": "kasib 8",
         "powers": [
             {"power": "item", "level": 3},
@@ -69,6 +70,7 @@ saved_recipes = {
         },
     },
     "shiny": {
+        "name": "Shiny",
         "recipe": "kasib 8",
         "powers": [
             {"power": "shiny", "level": 3},
@@ -128,8 +130,12 @@ def _choose_donut() -> tuple[str, list[Power]]:
     """A receita e as powers a pedir, guardadas ou escritas a mao."""
     if confirm("Usar uma receita guardada?"):
         options = [
-            (name, f"{name} {Fore.LIGHTBLACK_EX}({_summarize(entry)}){Style.RESET_ALL}")
-            for name, entry in saved_recipes.items()
+            (
+                key,
+                f"{entry.get('name', key)} "
+                f"{Fore.LIGHTBLACK_EX}({_summarize(entry)}){Style.RESET_ALL}",
+            )
+            for key, entry in saved_recipes.items()
         ]
         return _build_saved_donut(saved_recipes[select("Que receita?", options)])
     return _ask_manual_donut()
