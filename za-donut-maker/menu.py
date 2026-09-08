@@ -5,6 +5,7 @@ desenho das opcoes. O main.py junta-lhe o significado (receitas, argumentos).
 """
 
 import sys
+from typing import Literal, overload
 
 from colorama import Fore, Style
 
@@ -98,7 +99,22 @@ def confirm(question: str, default: bool = True) -> bool:
     return select(question, [(True, "Sim"), (False, "Nao")], 0 if default else 1)
 
 
-def ask_text(prompt: str, required: bool = True, default: str | None = None) -> str | None:
+@overload
+def ask_text(
+    prompt: str, required: Literal[True] = ..., default: str | None = ...
+) -> str: ...
+
+
+@overload
+def ask_text(
+    prompt: str, required: bool, default: str | None = ...
+) -> str | None: ...
+
+
+def ask_text(
+    prompt: str, required: bool = True, default: str | None = None
+) -> str | None:
+    """O texto escrito, ou None se for opcional e ficar vazio."""
     suffix = f" [{default}]" if default else ""
     while True:
         answer = input(f"{Fore.CYAN}{prompt}{suffix}: {Style.RESET_ALL}").strip()
