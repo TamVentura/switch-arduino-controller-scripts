@@ -1,0 +1,332 @@
+[
+  {
+    "index": 1,
+    "hyper": false,
+    "berry": "Cheri"
+  },
+  {
+    "index": 2,
+    "hyper": false,
+    "berry": "Chesto"
+  },
+  {
+    "index": 3,
+    "hyper": false,
+    "berry": "Pecha"
+  },
+  {
+    "index": 4,
+    "hyper": false,
+    "berry": "Rawst"
+  },
+  {
+    "index": 5,
+    "hyper": false,
+    "berry": "Aspear"
+  },
+  {
+    "index": 6,
+    "hyper": false,
+    "berry": "Oran"
+  },
+  {
+    "index": 7,
+    "hyper": false,
+    "berry": "Persim"
+  },
+  {
+    "index": 8,
+    "hyper": false,
+    "berry": "Lum"
+  },
+  {
+    "index": 9,
+    "hyper": false,
+    "berry": "Sitrus"
+  },
+  {
+    "index": 10,
+    "hyper": false,
+    "berry": "Pomeg"
+  },
+  {
+    "index": 11,
+    "hyper": false,
+    "berry": "Kelpsy"
+  },
+  {
+    "index": 12,
+    "hyper": false,
+    "berry": "Qualot"
+  },
+  {
+    "index": 13,
+    "hyper": false,
+    "berry": "Hondew"
+  },
+  {
+    "index": 14,
+    "hyper": false,
+    "berry": "Grepa"
+  },
+  {
+    "index": 15,
+    "hyper": false,
+    "berry": "Tamato"
+  },
+  {
+    "index": 16,
+    "hyper": false,
+    "berry": "Occa"
+  },
+  {
+    "index": 17,
+    "hyper": false,
+    "berry": "Passho"
+  },
+  {
+    "index": 18,
+    "hyper": false,
+    "berry": "Wacan"
+  },
+  {
+    "index": 19,
+    "hyper": false,
+    "berry": "Rindo"
+  },
+  {
+    "index": 20,
+    "hyper": false,
+    "berry": "Yache"
+  },
+  {
+    "index": 21,
+    "hyper": false,
+    "berry": "Chople"
+  },
+  {
+    "index": 22,
+    "hyper": false,
+    "berry": "Kebia"
+  },
+  {
+    "index": 23,
+    "hyper": false,
+    "berry": "Shuca"
+  },
+  {
+    "index": 24,
+    "hyper": false,
+    "berry": "Coba"
+  },
+  {
+    "index": 25,
+    "hyper": false,
+    "berry": "Payapa"
+  },
+  {
+    "index": 26,
+    "hyper": false,
+    "berry": "Tanga"
+  },
+  {
+    "index": 27,
+    "hyper": false,
+    "berry": "Charti"
+  },
+  {
+    "index": 28,
+    "hyper": false,
+    "berry": "Kasib"
+  },
+  {
+    "index": 29,
+    "hyper": false,
+    "berry": "Haban"
+  },
+  {
+    "index": 30,
+    "hyper": false,
+    "berry": "Colbur"
+  },
+  {
+    "index": 31,
+    "hyper": false,
+    "berry": "Babiri"
+  },
+  {
+    "index": 32,
+    "hyper": false,
+    "berry": "Chilan"
+  },
+  {
+    "index": 33,
+    "hyper": false,
+    "berry": "Roseli"
+  },
+  {
+    "index": 34,
+    "hyper": true,
+    "berry": "Cheri"
+  },
+  {
+    "index": 35,
+    "hyper": true,
+    "berry": "Chesto"
+  },
+  {
+    "index": 36,
+    "hyper": true,
+    "berry": "Pecha"
+  },
+  {
+    "index": 37,
+    "hyper": true,
+    "berry": "Rawst"
+  },
+  {
+    "index": 38,
+    "hyper": true,
+    "berry": "Aspear"
+  },
+  {
+    "index": 39,
+    "hyper": true,
+    "berry": "Oran"
+  },
+  {
+    "index": 40,
+    "hyper": true,
+    "berry": "Persim"
+  },
+  {
+    "index": 41,
+    "hyper": true,
+    "berry": "Lum"
+  },
+  {
+    "index": 42,
+    "hyper": true,
+    "berry": "Sitrus"
+  },
+  {
+    "index": 43,
+    "hyper": true,
+    "berry": "Pomeg"
+  },
+  {
+    "index": 44,
+    "hyper": true,
+    "berry": "Kelpsy"
+  },
+  {
+    "index": 45,
+    "hyper": true,
+    "berry": "Qualot"
+  },
+  {
+    "index": 46,
+    "hyper": true,
+    "berry": "Hondew"
+  },
+  {
+    "index": 47,
+    "hyper": true,
+    "berry": "Grepa"
+  },
+  {
+    "index": 48,
+    "hyper": true,
+    "berry": "Tamato"
+  },
+  {
+    "index": 49,
+    "hyper": true,
+    "berry": "Occa"
+  },
+  {
+    "index": 50,
+    "hyper": true,
+    "berry": "Passho"
+  },
+  {
+    "index": 51,
+    "hyper": true,
+    "berry": "Wacan"
+  },
+  {
+    "index": 52,
+    "hyper": true,
+    "berry": "Rindo"
+  },
+  {
+    "index": 53,
+    "hyper": true,
+    "berry": "Yache"
+  },
+  {
+    "index": 54,
+    "hyper": true,
+    "berry": "Chople"
+  },
+  {
+    "index": 55,
+    "hyper": true,
+    "berry": "Kebia"
+  },
+  {
+    "index": 56,
+    "hyper": true,
+    "berry": "Shuca"
+  },
+  {
+    "index": 57,
+    "hyper": true,
+    "berry": "Coba"
+  },
+  {
+    "index": 58,
+    "hyper": true,
+    "berry": "Payapa"
+  },
+  {
+    "index": 59,
+    "hyper": true,
+    "berry": "Tanga"
+  },
+  {
+    "index": 60,
+    "hyper": true,
+    "berry": "Charti"
+  },
+  {
+    "index": 61,
+    "hyper": true,
+    "berry": "Kasib"
+  },
+  {
+    "index": 62,
+    "hyper": true,
+    "berry": "Haban"
+  },
+  {
+    "index": 63,
+    "hyper": true,
+    "berry": "Colbur"
+  },
+  {
+    "index": 64,
+    "hyper": true,
+    "berry": "Babiri"
+  },
+  {
+    "index": 65,
+    "hyper": true,
+    "berry": "Chilan"
+  },
+  {
+    "index": 66,
+    "hyper": true,
+    "berry": "Roseli"
+  }
+]
