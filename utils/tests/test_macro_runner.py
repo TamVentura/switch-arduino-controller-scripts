@@ -280,3 +280,27 @@ def test_starting_an_invalid_macro_raises_before_touching_the_pad(runner):
 
     assert io.calls == []
     assert pad.events == []
+
+
+def test_toggling_the_same_macro_in_the_other_mode_switches_mode(runner):
+    r, _io, _pad = runner
+    r.store.save("demorada", "wait 30")
+    r.toggle("demorada")  # uma vez
+    assert wait_until(lambda: r.is_running())
+
+    r.toggle("demorada", loop=True)
+
+    # Pedir loop a uma macro que corre uma vez e passa-la a loop, nao para-la:
+    # so o mesmo gesto exacto e que desliga.
+    assert wait_until(lambda: (r.status() or {}).get("loop") is True)
+
+
+def test_toggling_a_looping_macro_the_same_way_stops_it(runner):
+    r, _io, _pad = runner
+    r.store.save("demorada", "wait 30")
+    r.toggle("demorada", loop=True)
+    assert wait_until(lambda: r.is_running())
+
+    r.toggle("demorada", loop=True)
+
+    assert wait_until(lambda: not r.is_running())

@@ -186,12 +186,16 @@ class MacroRunner:
         self._thread = None
 
     def toggle(self, name: str, loop: bool = False) -> bool:
-        """Start `name`, or stop it if it is the one already running.
+        """Start `name`, or stop it if that exact gesture is what is running.
+
+        Only the same macro in the same mode switches off — asking for a loop
+        while it runs once restarts it as a loop instead of stopping it, which
+        is what you meant by pressing the loop key.
 
         Returns True when it started, False when it stopped.
         """
         current = self.status()
-        if current and current["name"] == name:
+        if current and current["name"] == name and current["loop"] == loop:
             self.stop()
             return False
         self.start(name, loop=loop)
