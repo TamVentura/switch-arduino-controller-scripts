@@ -25,7 +25,7 @@ from colorama import Fore, Style
 RUNNING_MARK = "▶"
 
 # Single letters that mean something on their own.
-_STANDALONE = {"n": "new", "s": "stop", "q": "quit"}
+_STANDALONE = {"n": "new", "s": "stop", "w": "web", "q": "quit"}
 
 # Letter prefixes that take a macro number.
 _PREFIXED = {"l": "toggle", "e": "edit", "d": "delete"}
@@ -112,6 +112,7 @@ def render(names: list[str], status: dict[str, Any] | None) -> list[str]:
         f" {Fore.WHITE}n{Style.RESET_ALL} nova   "
         f"{Fore.WHITE}e<n>{Style.RESET_ALL} editar   "
         f"{Fore.WHITE}d<n>{Style.RESET_ALL} apagar   "
+        f"{Fore.WHITE}w{Style.RESET_ALL} abre a pagina   "
         f"{Fore.WHITE}Enter{Style.RESET_ALL} refresca   "
         f"{Fore.WHITE}q{Style.RESET_ALL} sair"
     )

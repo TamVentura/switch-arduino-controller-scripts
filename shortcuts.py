@@ -38,6 +38,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+import webbrowser
 
 _ROOT = os.path.dirname(os.path.abspath(__file__))
 for _p in (_ROOT, os.path.join(_ROOT, "utils")):
@@ -46,6 +47,7 @@ for _p in (_ROOT, os.path.join(_ROOT, "utils")):
 
 import controller  # noqa: E402
 import macro_menu  # noqa: E402
+import macro_server  # noqa: E402
 import settings  # noqa: E402
 import xbox_passthrough  # noqa: E402
 from colorama import Fore, Style  # noqa: E402
@@ -184,7 +186,7 @@ def _toggle(runner: MacroRunner, name: str, loop: bool) -> None:
     # para sair uma linha só, venha a ordem do terminal ou da web.
 
 
-def _menu(runner: MacroRunner) -> None:
+def _menu(runner: MacroRunner, web_url: str | None) -> None:
     while True:
         print()
         for line in macro_menu.render(runner.store.names(), runner.status()):
@@ -222,6 +224,12 @@ def _menu(runner: MacroRunner) -> None:
             _edit_macro(runner, action.name)
         elif action.kind == "delete" and action.name:
             _delete_macro(runner, action.name)
+        elif action.kind == "web":
+            if web_url:
+                print(f"{Fore.CYAN}{web_url}{Style.RESET_ALL}")
+                webbrowser.open(web_url)
+            else:
+                print(f"{Fore.YELLOW}A pagina esta desligada (--no-web).{Style.RESET_ALL}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -234,25 +242,63 @@ def _on_finish(name: str, reason: str) -> None:
     print(f"\n{colour}■ {name}: {reason}{Style.RESET_ALL}")
 
 
-def main(port: str | None = None) -> None:
+def main(
+    port: str | None = None,
+    web_port: int = macro_server.DEFAULT_PORT,
+    web: bool = True,
+) -> None:
     port = port or settings.COM_PORT
     controller.connect(port)
     print(f"{Fore.GREEN}Arduino em {port}{Style.RESET_ALL}")
 
     xbox_passthrough.run(arduino_port=None)
-    print(f"{Fore.GREEN}Comando ligado — a captura fica para o Elgato Studio{Style.RESET_ALL}")
+    print(
+        f"{Fore.GREEN}Comando ligado — a captura fica para o Elgato Studio"
+        f"{Style.RESET_ALL}"
+    )
 
     runner = MacroRunner()
     runner.on_finish = _on_finish
 
+    server = None
+    web_url = None
+    if web:
+        try:
+            server = macro_server.MacroServer(runner, port=web_port)
+            web_url = server.start()
+            print(f"{Fore.GREEN}Página em {web_url}{Style.RESET_ALL}  ('w' abre)")
+        except OSError as exc:
+            # Porta ocupada não é razão para ficar sem macros no terminal.
+            print(f"{Fore.YELLOW}Sem página web ({exc}){Style.RESET_ALL}")
+            server = None
+
     try:
-        _menu(runner)
+        _menu(runner, web_url)
     finally:
         runner.stop()
+        if server is not None:
+            server.stop()
         xbox_passthrough.stop()
         print(f"{Fore.GREEN}Até à próxima.{Style.RESET_ALL}")
         os._exit(0)
 
 
+def _cli(argv: list[str]) -> None:
+    """python shortcuts.py [COM8] [--port 8778] [--no-web]"""
+    com_port, web_port, web = None, macro_server.DEFAULT_PORT, True
+    rest = list(argv)
+    while rest:
+        argument = rest.pop(0)
+        if argument == "--no-web":
+            web = False
+        elif argument == "--port":
+            web_port = int(rest.pop(0))
+        elif argument.startswith("-"):
+            raise SystemExit(f"nao conheco {argument}\n{_cli.__doc__}")
+        else:
+            com_port = argument
+    main(com_port, web_port=web_port, web=web)
+
+
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else None)
+    _cli(sys.argv[1:])

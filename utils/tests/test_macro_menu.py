@@ -103,3 +103,12 @@ def test_a_looping_macro_shows_which_lap_it_is_on():
 def test_an_empty_list_says_so_instead_of_showing_nothing():
     listing = "\n".join(MM.render([], status=None))
     assert "macro" in listing.lower()
+
+
+def test_w_opens_the_web_page():
+    assert choice("w") == Action("web")
+
+
+def test_the_web_command_is_listed_in_the_help():
+    listing = MM._plain("\n".join(MM.render(NAMES, status=None)))
+    assert " w " in listing
