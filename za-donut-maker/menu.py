@@ -37,12 +37,14 @@ def _read_key() -> str:
     return char
 
 
-def _draw(options: list[tuple], index: int) -> None:
+def _draw(options: list[tuple], index: int, chosen: set[int] | None = None) -> None:
     for i, (_, label) in enumerate(options):
         color = Fore.LIGHTGREEN_EX if i == index else Fore.LIGHTBLACK_EX
         marker = ">" if i == index else " "
+        # sem "chosen" e um menu de escolha unica: nao se desenham as caixas
+        box = "" if chosen is None else ("[x] " if i in chosen else "[ ] ")
         # o 2K limpa a linha toda: as opcoes tem larguras diferentes
-        sys.stdout.write(f"\x1b[2K  {color}{marker} {label}{Style.RESET_ALL}\n")
+        sys.stdout.write(f"\x1b[2K  {color}{marker} {box}{label}{Style.RESET_ALL}\n")
     sys.stdout.flush()
 
 
@@ -93,6 +95,77 @@ def select(title: str, options: list[tuple], default: int = 0):
             continue
         sys.stdout.write(f"\x1b[{len(options)}A")  # volta ao topo da lista
         _draw(options, index)
+
+
+def _parse_multi_answer(answer: str, count: int) -> list[int] | None:
+    """Os indices escritos a mao ("1,3 9"), ou None se algum nao servir."""
+    indexes: list[int] = []
+    for token in answer.replace(",", " ").split():
+        if not token.isdigit() or not 1 <= int(token) <= count:
+            return None
+        if int(token) - 1 not in indexes:  # repetida nao conta duas vezes
+            indexes.append(int(token) - 1)
+    return indexes
+
+
+def _multi_select_numbered(title: str, options: list[tuple], required: bool) -> list:
+    """Alternativa quando nao ha consola interativa (pipe, redirect)."""
+    print(f"{Fore.CYAN}{title}{Style.RESET_ALL}")
+    for i, (_, label) in enumerate(options, 1):
+        print(f"  {i}. {label}")
+    while True:
+        answer = input("Escolhas (ex: 1,3), vazio para nenhuma: ").strip()
+        indexes = _parse_multi_answer(answer, len(options))
+        if indexes is None:
+            print(
+                f"{Fore.LIGHTRED_EX}Escolhe numeros entre 1 e "
+                f"{len(options)}.{Style.RESET_ALL}"
+            )
+            continue
+        if required and not indexes:
+            print(f"{Fore.LIGHTRED_EX}Escolhe pelo menos uma.{Style.RESET_ALL}")
+            continue
+        return [options[i][0] for i in indexes]
+
+
+def multi_select(title: str, options: list[tuple], required: bool = False) -> list:
+    """Como o ``select``, mas devolve varias: espaco marca, enter confirma.
+
+    ``options`` sao pares ``(valor, texto)``. Devolve os valores marcados, pela
+    ordem da lista; vazio se nao se marcar nada (e ``required`` for falso). Esc
+    desiste (levanta ``KeyboardInterrupt``).
+    """
+    if not options:
+        raise ValueError("multi_select() sem opcoes")
+
+    if not _interactive():
+        return _multi_select_numbered(title, options, required)
+
+    print(
+        f"{Fore.CYAN}{title}{Style.RESET_ALL} "
+        f"{Fore.LIGHTBLACK_EX}(setas, espaco marca, enter confirma){Style.RESET_ALL}"
+    )
+    index = 0
+    chosen: set[int] = set()
+    _draw(options, index, chosen)
+    while True:
+        key = _read_key()
+        if key == "up":
+            index = (index - 1) % len(options)
+        elif key == "down":
+            index = (index + 1) % len(options)
+        elif key == " ":
+            chosen.symmetric_difference_update({index})
+        elif key == "enter":
+            if required and not chosen:
+                continue  # nada marcado e nao se aceita vazio: fica a espera
+            return [value for i, (value, _) in enumerate(options) if i in chosen]
+        elif key == "escape":
+            raise KeyboardInterrupt()
+        else:
+            continue
+        sys.stdout.write(f"\x1b[{len(options)}A")  # volta ao topo da lista
+        _draw(options, index, chosen)
 
 
 def confirm(question: str, default: bool = True) -> bool:

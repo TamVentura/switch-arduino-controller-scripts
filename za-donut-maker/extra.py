@@ -152,15 +152,27 @@ def _parse_extra(line: str) -> str | None:
     return extra or None
 
 
-def _same_extra(expected: str, actual: str | None) -> bool:
+def _same_extra(expected: str | list[str] | None, actual: str | None) -> bool:
     """Compara o extra pedido com o lido, tolerando misreads.
+
+    O pedido pode ser um texto ("fire"), varios em alternativa ("water" ou
+    "dragon" ou "ground") ou nada — e nada quer dizer que qualquer extra serve.
+    Com varios basta um bater.
 
     O extra e texto livre do jogo ("Berries", "Fire"), por isso sofre das
     mesmas trocas de letras que o nome da power: "Berrles", "Berrjes", "Flre".
     Compara-se pelo inicio, para aguentar lixo colado no fim.
     """
+    wanted = [expected] if isinstance(expected, str) else list(expected or [])
+    wanted = [text for text in wanted if text]
+    if not wanted:
+        return True  # nao se pediu tipo nenhum: serve o que vier
     if actual is None:
         return False
+    return any(_matches_extra(text, actual) for text in wanted)
+
+
+def _matches_extra(expected: str, actual: str) -> bool:
     expected_normalized = _normalize(expected)
     actual_normalized = _normalize(actual)
     if expected_normalized == actual_normalized:
@@ -171,4 +183,5 @@ def _same_extra(expected: str, actual: str | None) -> bool:
 class Power(TypedDict):
     power: str
     level: NotRequired[int]
-    extra: NotRequired[str]
+    # o esperado pode trazer varios em alternativa; o lido do OCR e sempre um
+    extra: NotRequired[str | list[str] | None]

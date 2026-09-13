@@ -26,7 +26,7 @@ from extra import (  # noqa: E402  (o * nao traz nomes com "_")
     _parse_level,
     _same_extra,
 )
-from menu import ask_int, ask_text, confirm, select  # noqa: E402
+from menu import ask_int, ask_text, confirm, multi_select, select  # noqa: E402
 from powers import powers_texts  # noqa: E402
 
 # so as hyper interessam; o cursor comeca sempre na ultima da lista
@@ -78,7 +78,7 @@ saved_recipes = {
         ],
         "arguments": {
             "type": {
-                "type": "single-option",
+                "type": "multi-option",
                 "options": {
                     "normal": "Normal",
                     "fire": "Fire",
@@ -172,6 +172,11 @@ def _ask_argument(name: str, spec: dict):
         if not required:
             options.append((None, "(qualquer)"))
         return select(f"{label}?", options)
+    if kind == "multi-option":
+        options = [(value, text) for value, text in spec["options"].items()]
+        chosen = multi_select(f"{label}? (varios)", options, required=required)
+        # nada marcado e o mesmo que nao exigir nada: nao se escreve na receita
+        return chosen or None
     if kind == "string":
         return ask_text(label, required=required)
     if kind == "int":
@@ -300,8 +305,11 @@ def _format_power(power: Power) -> str:
     parts = [power["power"]]
     if "level" in power:
         parts.append(f"Lv.{power['level']}")
-    if "extra" in power:
-        parts.append(f"({power['extra']})")
+    extra = power.get("extra")
+    if not isinstance(extra, str):
+        extra = " / ".join(extra or [])
+    if extra:
+        parts.append(f"({extra})")
     return " ".join(parts)
 
 
