@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>macros — switch</title>
+<style>
+  :root {
+    --bg: #14161a;
+    --panel: #1c1f25;
+    --line: #2a2f38;
+    --text: #dfe3ea;
+    --dim: #8b93a3;
+    --go: #55d187;
+    --stop: #e8735a;
+    --loop: #6aa9ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 "Cascadia Code", "Consolas", ui-monospace, monospace;
+  }
+  header {
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    padding: 14px 18px; border-bottom: 1px solid var(--line);
+  }
+  header h1 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: .5px; }
+  header .hint { color: var(--dim); font-size: 12px; }
+  #now {
+    margin-left: auto; padding: 4px 10px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--dim); font-size: 12px;
+    white-space: nowrap;
+  }
+  #now.on { color: var(--go); border-color: var(--go); }
+
+  main {
+    display: grid; grid-template-columns: minmax(240px, 1fr) minmax(0, 2fr);
+    gap: 18px; padding: 18px; align-items: start;
+  }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; } }
+
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+  section > h2 {
+    margin: 0; padding: 10px 14px; border-bottom: 1px solid var(--line);
+    font-size: 12px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--dim);
+  }
+  .body { padding: 12px 14px; }
+
+  ul { list-style: none; margin: 0; padding: 0; }
+  li {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px; border-bottom: 1px solid var(--line);
+  }
+  li:last-child { border-bottom: 0; }
+  li.running { background: #1a2a22; }
+  li .name {
+    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    cursor: pointer;
+  }
+  li.running .name { color: var(--go); }
+  li .lap { color: var(--go); font-size: 11px; white-space: nowrap; }
+  .empty { padding: 14px; color: var(--dim); }
+
+  button {
+    font: inherit; font-size: 12px; color: var(--text);
+    background: #232830; border: 1px solid var(--line);
+    border-radius: 5px; padding: 3px 9px; cursor: pointer;
+  }
+  button:hover { border-color: var(--dim); }
+  button.go { color: var(--go); }
+  button.stop { color: var(--stop); border-color: var(--stop); }
+  button.loop { color: var(--loop); }
+  button.danger:hover { color: var(--stop); border-color: var(--stop); }
+  button.primary { background: #263a30; color: var(--go); border-color: var(--go); }
+
+  input, textarea {
+    width: 100%; font: inherit; color: var(--text);
+    background: #121418; border: 1px solid var(--line);
+    border-radius: 5px; padding: 8px 10px;
+  }
+  textarea { min-height: 260px; resize: vertical; white-space: pre; }
+  input:focus, textarea:focus { outline: none; border-color: var(--loop); }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .row label { color: var(--dim); font-size: 12px; white-space: nowrap; }
+  .actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .actions .spacer { flex: 1; }
+
+  #msg { margin-top: 10px; font-size: 12px; white-space: pre-wrap; min-height: 1.5em; }
+  #msg.err { color: var(--stop); }
+  #msg.ok { color: var(--go); }
+
+  details { margin-top: 12px; color: var(--dim); font-size: 12px; }
+  details pre { margin: 8px 0 0; color: var(--text); white-space: pre-wrap; }
+  summary { cursor: pointer; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>macros</h1>
+  <span class="hint">o comando fica calado enquanto uma macro corre</span>
+  <span id="now">parado</span>
+</header>
+
+<main>
+  <section>
+    <h2>guardadas</h2>
+    <ul id="list"></ul>
+    <div class="body">
+      <button id="new">nova macro</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>escrever</h2>
+    <div class="body">
+      <div class="row">
+        <label for="name">nome</label>
+        <input id="name" placeholder="passear" autocomplete="off">
+      </div>
+      <textarea id="text" spellcheck="false" placeholder="click A
+wait 1.5
+hold_for R 2"></textarea>
+      <div class="actions">
+        <button id="save" class="primary">gravar</button>
+        <button id="run" class="go">correr uma vez</button>
+        <button id="runloop" class="loop">correr em loop</button>
+        <span class="spacer"></span>
+        <button id="stop" class="stop">parar</button>
+      </div>
+      <div id="msg"></div>
+
+      <details>
+        <summary>comandos</summary>
+        <pre>click TECLA [xN] [sleep=S] [hold=H]   um toque (ou N toques)
+hold TECLA                           carrega e deixa carregado
+release TECLA                        larga
+hold_for TECLA SEGUNDOS              carrega, espera, larga
+stick left|right X Y                 -1 a 1; 0 0 e o centro
+wait SEGUNDOS                        nao faz nada
+#                                    comentario
+
+teclas: A B X Y H + - L R C  |  l r = ZL ZR  |  1 2 3 4 = d-pad
+nomes:  up down left right zl zr home capture plus minus lclick rclick
+sticks digitais: w a s d q e z c (esq)   u h j k y i n m (dir)</pre>
+      </details>
+    </div>
+  </section>
+</main>
+
+<script>
+let current = null;   // o que esta a correr, vindo do servidor
+let selected = null;  // a macro aberta no editor
+
+const $ = (id) => document.getElementById(id);
+
+async function api(path, options) {
+  const response = await fetch(path, options);
+  const text = await response.text();
+  if (!response.ok) throw new Error(text.trim());
+  return text ? JSON.parse(text) : null;
+}
+
+function say(text, kind) {
+  const box = $("msg");
+  box.textContent = text || "";
+  box.className = kind || "";
+}
+
+// ── a lista ────────────────────────────────────────────────────────────────
+
+function drawList(names) {
+  const list = $("list");
+  list.innerHTML = "";
+
+  if (!names.length) {
+    const empty = document.createElement("li");
+    empty.className = "empty";
+    empty.textContent = "ainda nenhuma — escreve uma ao lado";
+    list.appendChild(empty);
+    return;
+  }
+
+  for (const name of names) {
+    const running = current && current.name === name;
+    const item = document.createElement("li");
+    if (running) item.classList.add("running");
+
+    const label = document.createElement("span");
+    label.className = "name";
+    label.textContent = name;
+    label.title = "abrir no editor";
+    label.onclick = () => open(name);
+    item.appendChild(label);
+
+    if (running) {
+      const lap = document.createElement("span");
+      lap.className = "lap";
+      lap.textContent = current.loop ? `loop · volta ${current.lap}` : "a correr";
+      item.appendChild(lap);
+    }
+
+    item.appendChild(button(running && !current.loop ? "■" : "▶",
+                            running && !current.loop ? "stop" : "go",
+                            () => toggle(name, false)));
+    item.appendChild(button(running && current.loop ? "■" : "↻",
+                            running && current.loop ? "stop" : "loop",
+                            () => toggle(name, true)));
+    item.appendChild(button("✕", "danger", () => remove(name)));
+    list.appendChild(item);
+  }
+}
+
+function button(text, className, onclick) {
+  const element = document.createElement("button");
+  element.textContent = text;
+  element.className = className;
+  element.onclick = onclick;
+  return element;
+}
+
+function drawStatus() {
+  const badge = $("now");
+  if (!current) {
+    badge.textContent = "parado";
+    badge.className = "";
+    return;
+  }
+  badge.textContent = current.loop
+    ? `▶ ${current.name} · volta ${current.lap}`
+    : `▶ ${current.name}`;
+  badge.className = "on";
+}
+
+// ── falar com o servidor ───────────────────────────────────────────────────
+
+async function refresh() {
+  try {
+    const state = await api("/api/macros");
+    current = state.status;
+    drawStatus();
+    drawList(state.names);
+  } catch (exc) {
+    $("now").textContent = "sem servidor";
+  }
+}
+
+async function open(name) {
+  try {
+    const macro = await api(`/api/macro/${encodeURIComponent(name)}`);
+    selected = name;
+    $("name").value = name;
+    $("text").value = macro.text;
+    say("");
+  } catch (exc) {
+    say(exc.message, "err");
+  }
+}
+
+async function save() {
+  const name = $("name").value.trim();
+  if (!name) return say("falta o nome", "err");
+  try {
+    await api(`/api/macro/${encodeURIComponent(name)}`, {
+      method: "PUT",
+      body: $("text").value,
+    });
+    selected = name;
+    say(`${name} gravada`, "ok");
+    refresh();
+  } catch (exc) {
+    say(exc.message, "err");
+  }
+}
+
+async function toggle(name, loop) {
+  try {
+    const state = await api(
+      `/api/macro/${encodeURIComponent(name)}/toggle?loop=${loop ? 1 : 0}`,
+      { method: "POST" }
+    );
+    current = state.status;
+    say("");
+    refresh();
+  } catch (exc) {
+    say(exc.message, "err");
+  }
+}
+
+async function remove(name) {
+  if (!confirm(`Apagar ${name}?`)) return;
+  try {
+    await api(`/api/macro/${encodeURIComponent(name)}`, { method: "DELETE" });
+    if (selected === name) { selected = null; $("name").value = ""; $("text").value = ""; }
+    refresh();
+  } catch (exc) {
+    say(exc.message, "err");
+  }
+}
+
+async function stop() {
+  try {
+    await api("/api/stop", { method: "POST" });
+    refresh();
+  } catch (exc) {
+    say(exc.message, "err");
+  }
+}
+
+// Gravar antes de correr: o que se ve na caixa e o que corre.
+async function runCurrent(loop) {
+  const name = $("name").value.trim();
+  if (!name) return say("falta o nome", "err");
+  await save();
+  if ($("msg").className !== "err") toggle(name, loop);
+}
+
+$("save").onclick = save;
+$("run").onclick = () => runCurrent(false);
+$("runloop").onclick = () => runCurrent(true);
+$("stop").onclick = stop;
+$("new").onclick = () => {
+  selected = null;
+  $("name").value = "";
+  $("text").value = "";
+  say("");
+  $("name").focus();
+};
+
+// Ctrl+Enter grava e corre — para nao ter de ir ao rato a meio do jogo.
+$("text").addEventListener("keydown", (event) => {
+  if (event.ctrlKey && event.key === "Enter") {
+    event.preventDefault();
+    runCurrent(false);
+  }
+});
+
+refresh();
+setInterval(refresh, 1000);
+</script>
+</body>
+</html>

@@ -108,6 +108,10 @@ def _deadzone(v: float) -> float:
 _lock = threading.Lock()
 _selected_instance_id: int | None = 1  # stable pygame instance_id, or None
 _shutdown = threading.Event()
+# While set, the pad is muted: nothing it does reaches the Switch.  Used to get
+# the pad out of the way of a running macro -- both write to the same serial
+# line, so a macro only does exactly what it says if the pad stays quiet.
+_suspended = threading.Event()
 _root: "tk.Tk | None" = None
 _window_visible: bool = False  # tracks whether the window is currently shown
 
@@ -121,6 +125,24 @@ def _set_selected(iid: int | None) -> None:
 def _get_selected() -> int | None:
     with _lock:
         return _selected_instance_id
+
+
+def suspend() -> None:
+    """Mute the pad: it stops reaching the Switch until resume() is called.
+
+    Everything it was holding is released on the next tick, so nothing stays
+    pressed while a macro is running.
+    """
+    _suspended.set()
+
+
+def resume() -> None:
+    """Un-mute the pad, resending whatever is still being held or pushed."""
+    _suspended.clear()
+
+
+def is_suspended() -> bool:
+    return _suspended.is_set()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -143,6 +165,8 @@ class _InputThread(threading.Thread):
         self._rt_held = False
         self._previous_axix_l = (0, 0)
         self._previous_axix_r = (0, 0)
+        # True once the pad has been let go of because of a suspension.
+        self._muted = False
         # Pause-chord state: "pending" (held, not yet forwarded) |
         #                    "sent" (forwarded normally) |
         #                    "suppressed" (chord fired, do not forward)
@@ -187,6 +211,11 @@ class _InputThread(threading.Thread):
         self._hat = (0, 0)
         self._lt_held = False
         self._rt_held = False
+        # Forget the last stick positions too, otherwise a stick that is still
+        # pushed over looks unchanged on the next poll and never gets resent --
+        # the Switch would stay centred while the pad is not.
+        self._previous_axix_l = (0, 0)
+        self._previous_axix_r = (0, 0)
         self._combo_state.clear()
         self._combo_press_time.clear()
 
@@ -208,40 +237,51 @@ class _InputThread(threading.Thread):
         sw.mark_as_bypass()
         while not _shutdown.is_set():
             pygame.event.get()  # drain queue — required for get_button() to update on Windows
-            sel = _get_selected()
-
-            # Selection changed — switch joystick objects
-            if sel != self._iid:
-                self._release_all()
-                self._iid = sel
-                if sel is not None:
-                    self._joy = self._find_joystick(sel)
-                    if self._joy is None:
-                        # ID no longer valid
-                        self._iid = None
-                        _set_selected(None)
-                else:
-                    self._joy = None
-            try:
-                if self._joy is None:
-                    time.sleep(0.05)
-                    continue
-            except:
-                _shutdown.set()
-
-            try:
-                self._poll()
-            except pygame.error as e:
-                # Controller disconnected mid-poll
-                lost_iid = self._iid
-                self._release_all()
-                self._joy = None
-                self._iid = None
-                _set_selected(None)
-                if lost_iid is not None:
-                    self._on_disconnect(lost_iid)
-
+            self._tick()
             time.sleep(1.0 / POLL_HZ)
+
+    def _tick(self) -> None:
+        """One pass of the input loop."""
+        if _suspended.is_set():
+            if not self._muted:
+                # Let go of everything once, then stay quiet: a macro is running
+                # and the pad must not fight it on the serial line.
+                self._release_all()
+                self._muted = True
+            return
+        if self._muted:
+            # Coming back.  _release_all() wiped the remembered state, so the
+            # poll below resends whatever is still held or pushed.
+            self._muted = False
+
+        sel = _get_selected()
+
+        # Selection changed — switch joystick objects
+        if sel != self._iid:
+            self._release_all()
+            self._iid = sel
+            if sel is not None:
+                self._joy = self._find_joystick(sel)
+                if self._joy is None:
+                    # ID no longer valid
+                    self._iid = None
+                    _set_selected(None)
+            else:
+                self._joy = None
+        if self._joy is None:
+            return
+
+        try:
+            self._poll()
+        except pygame.error:
+            # Controller disconnected mid-poll
+            lost_iid = self._iid
+            self._release_all()
+            self._joy = None
+            self._iid = None
+            _set_selected(None)
+            if lost_iid is not None:
+                self._on_disconnect(lost_iid)
 
     def _poll(self) -> None:
         joy = self._joy
