@@ -39,7 +39,12 @@ class TelegramNotifier:
         *,
         api_base: str | None = None,
         request_timeout: float = 35.0,
+        enabled: bool = True,
     ) -> None:
+        # When False, nothing is sent to or polled from Telegram:
+        # send_* become no-ops and send_and_wait only listens to the console
+        # (plus space / timeout).  Can be flipped at runtime.
+        self.enabled = enabled
         self.bot_token = bot_token
         self.chat_id = str(chat_id)
         self.api_base = api_base or f"https://api.telegram.org/bot{bot_token}"
@@ -68,6 +73,8 @@ class TelegramNotifier:
             self._dispatcher_thread.join(timeout=0)
         with self._commands_lock:
             self._commands.clear()
+        if not self.enabled:
+            return
         try:
             self._post_json("deleteMyCommands", {})
         except Exception:
@@ -84,6 +91,8 @@ class TelegramNotifier:
         timeout_seconds: float | None = None,
     ) -> None:
         """Non-blocking: dispatches the send to a background thread."""
+        if not self.enabled:
+            return
         threading.Thread(
             target=self._send_message,
             kwargs=dict(
@@ -158,6 +167,8 @@ class TelegramNotifier:
         timeout_seconds: float | None = None,
     ) -> None:
         """Non-blocking: dispatches the send to a background thread."""
+        if not self.enabled:
+            return
         threading.Thread(
             target=self._send_photo,
             kwargs=dict(
@@ -282,6 +293,8 @@ class TelegramNotifier:
         timeout_seconds: float | None = None,
     ) -> None:
         """Non-blocking: dispatches the send to a background thread."""
+        if not self.enabled:
+            return
         threading.Thread(
             target=self._send_notification,
             kwargs=dict(
@@ -365,27 +378,36 @@ class TelegramNotifier:
             ["callback_query", "message"] if wait_for_text else ["callback_query"]
         )
 
-        # Only flush stale updates when the dispatcher is not already keeping
-        # the offset current; when it is running, the offset is always fresh.
-        if not self._dispatcher_is_running():
-            self._sync_offset(allowed_updates=allowed_updates)
-
         token_prefix = f"act:{uuid.uuid4().hex}:"
-        tagged_actions = [
-            TelegramAction(text=a.text, value=token_prefix + a.value)
-            for a in (actions or [])
-        ]
+        message_id: int | None = None
 
-        sent = self._send_notification(
-            text=text,
-            image_path=image_path,
-            frame=frame,
-            actions=tagged_actions,
-            parse_mode=parse_mode,
-            disable_notification=disable_notification,
-        )
+        if self.enabled:
+            # Only flush stale updates when the dispatcher is not already keeping
+            # the offset current; when it is running, the offset is always fresh.
+            if not self._dispatcher_is_running():
+                self._sync_offset(allowed_updates=allowed_updates)
 
-        message_id: int = sent["result"]["message_id"]
+            tagged_actions = [
+                TelegramAction(text=a.text, value=token_prefix + a.value)
+                for a in (actions or [])
+            ]
+
+            sent = self._send_notification(
+                text=text,
+                image_path=image_path,
+                frame=frame,
+                actions=tagged_actions,
+                parse_mode=parse_mode,
+                disable_notification=disable_notification,
+            )
+            message_id = sent["result"]["message_id"]
+        else:
+            # The question would only have been on Telegram — show it here.
+            if text:
+                print(text)
+            if actions:
+                print("Opções: " + ", ".join(a.value for a in actions))
+
         response_message_id: list[int | None] = [None]
 
         finished = threading.Event()
@@ -393,7 +415,7 @@ class TelegramNotifier:
         question_deleted = threading.Event()
 
         def do_delete_question() -> None:
-            if not delete_message_after_finish:
+            if not delete_message_after_finish or message_id is None:
                 return
             if question_deleted.is_set():
                 return
@@ -464,7 +486,15 @@ class TelegramNotifier:
         deadline = None if timeout_seconds is None else (time.time() + timeout_seconds)
 
         try:
-            if self._dispatcher_is_running():
+            if not self.enabled:
+                # Telegram off — nothing to poll; console / space / timeout only.
+                while not finished.is_set():
+                    if deadline is not None and time.time() >= deadline:
+                        finish(NotificationResult(source="timeout"))
+                        break
+                    finished.wait(timeout=0.1)
+
+            elif self._dispatcher_is_running():
                 # Dispatcher is the single owner of the update stream.
                 # Register a temporary sink so it routes our updates here.
                 def _update_sink(update: dict[str, Any]) -> bool:
@@ -630,6 +660,8 @@ class TelegramNotifier:
             Optional per-image captions (only the first caption is shown by
             Telegram for the whole album, but we attach them for context).
         """
+        if not self.enabled:
+            return {}
         if not images:
             raise ValueError("images list must not be empty")
         if len(images) > 10:
@@ -666,6 +698,8 @@ class TelegramNotifier:
         return self._post_multipart("sendMediaGroup", fields=fields, files=files)
 
     def delete_message(self, *, message_id: int) -> dict[str, Any]:
+        if not self.enabled:
+            return {}
         return self._post_json(
             "deleteMessage",
             {"chat_id": self.chat_id, "message_id": message_id},
@@ -701,6 +735,8 @@ class TelegramNotifier:
 
     def _sync_commands(self) -> None:
         """Push the current command list to Telegram via setMyCommands."""
+        if not self.enabled:
+            return
         with self._commands_lock:
             items = list(self._commands.items())
         if not items:
@@ -726,6 +762,8 @@ class TelegramNotifier:
         dispatcher is already running.  The dispatcher also handles updates for
         :meth:`send_and_wait` so both can coexist on the same update stream.
         """
+        if not self.enabled:
+            return
         if self._dispatcher_thread is not None and self._dispatcher_thread.is_alive():
             return
         self._sync_offset(allowed_updates=["message", "callback_query"])

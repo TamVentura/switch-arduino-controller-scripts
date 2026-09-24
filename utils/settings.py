@@ -24,6 +24,11 @@ CAPTURE_FPS    = 60
 TESSDATA_PATH = r"C:\Program Files\Tesseract-OCR\tessdata"
 
 # ---------------------------------------------------------------------------
+# Telegram
+# ---------------------------------------------------------------------------
+TELEGRAM_ENABLED = True     # False: nothing is sent to Telegram; send_and_wait only reads the console
+
+# ---------------------------------------------------------------------------
 # Debug / logging
 # ---------------------------------------------------------------------------
 VERBOSE = True              # Print KEY / Click / Screenshot messages to the console
