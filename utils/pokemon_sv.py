@@ -225,11 +225,13 @@ def get_mode():
         else:
             return Mode.TEXT_BOX
 
+    # map_icon.png (62x64) is larger than the live 1080p icon (~47px): it only
+    # matches at ~0.75 (confirmed 2026-09-24: 0.96 @0.75, 0.80 @0.8, none >=1).
     elif template_matcher.find_all(
         capture.get_frame_region(522, 252, 699, 384),
         get_file_relative_path("../reference_images/map_icon.png"),
-        threshold=0.94,
-        scales=(1, 1.3, 2),
+        threshold=0.8,
+        scales=(0.7, 0.75, 0.8),
     ):
         return Mode.MAP
 
