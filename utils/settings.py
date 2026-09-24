@@ -26,7 +26,7 @@ TESSDATA_PATH = r"C:\Program Files\Tesseract-OCR\tessdata"
 # ---------------------------------------------------------------------------
 # Telegram
 # ---------------------------------------------------------------------------
-TELEGRAM_ENABLED = True     # False: nothing is sent to Telegram; send_and_wait only reads the console
+TELEGRAM_RECEIVE = True     # False: send_and_wait / bot commands only use the console; plain sends still go out
 
 # ---------------------------------------------------------------------------
 # Debug / logging

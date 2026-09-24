@@ -39,12 +39,13 @@ class TelegramNotifier:
         *,
         api_base: str | None = None,
         request_timeout: float = 35.0,
-        enabled: bool = True,
+        receive: bool = True,
     ) -> None:
-        # When False, nothing is sent to or polled from Telegram:
-        # send_* become no-ops and send_and_wait only listens to the console
-        # (plus space / timeout).  Can be flipped at runtime.
-        self.enabled = enabled
+        # When False, nothing is read back from Telegram: send_and_wait neither
+        # sends the question nor polls for an answer (console / space / timeout
+        # only), bot commands and the "Fechar" button are skipped.  Plain sends
+        # (send_message, send_photo, ...) still go out.  Can be flipped at runtime.
+        self.receive = receive
         self.bot_token = bot_token
         self.chat_id = str(chat_id)
         self.api_base = api_base or f"https://api.telegram.org/bot{bot_token}"
@@ -73,7 +74,7 @@ class TelegramNotifier:
             self._dispatcher_thread.join(timeout=0)
         with self._commands_lock:
             self._commands.clear()
-        if not self.enabled:
+        if not self.receive:
             return
         try:
             self._post_json("deleteMyCommands", {})
@@ -91,8 +92,6 @@ class TelegramNotifier:
         timeout_seconds: float | None = None,
     ) -> None:
         """Non-blocking: dispatches the send to a background thread."""
-        if not self.enabled:
-            return
         threading.Thread(
             target=self._send_message,
             kwargs=dict(
@@ -123,7 +122,7 @@ class TelegramNotifier:
         }
         if parse_mode:
             payload["parse_mode"] = parse_mode
-        if closer:
+        if closer and self.receive:
             if actions is None:
                 actions = []
             actions.append(TelegramAction("Fechar", "close_auto"))
@@ -134,7 +133,7 @@ class TelegramNotifier:
 
         response = self._post_json("sendMessage", payload)
 
-        if closer:
+        if closer and self.receive:
             try:
                 self._start_close_listener(response["result"]["message_id"])
             except Exception:
@@ -167,8 +166,6 @@ class TelegramNotifier:
         timeout_seconds: float | None = None,
     ) -> None:
         """Non-blocking: dispatches the send to a background thread."""
-        if not self.enabled:
-            return
         threading.Thread(
             target=self._send_photo,
             kwargs=dict(
@@ -216,7 +213,7 @@ class TelegramNotifier:
             fields["caption"] = caption
         if parse_mode:
             fields["parse_mode"] = parse_mode
-        if closer:
+        if closer and self.receive:
             if actions is None:
                 actions = []
             actions.append(TelegramAction("Fechar", "close_auto"))
@@ -264,7 +261,7 @@ class TelegramNotifier:
                 },
             )
 
-        if closer:
+        if closer and self.receive:
             try:
                 self._start_close_listener(response["result"]["message_id"])
             except Exception:
@@ -293,8 +290,6 @@ class TelegramNotifier:
         timeout_seconds: float | None = None,
     ) -> None:
         """Non-blocking: dispatches the send to a background thread."""
-        if not self.enabled:
-            return
         threading.Thread(
             target=self._send_notification,
             kwargs=dict(
@@ -381,7 +376,7 @@ class TelegramNotifier:
         token_prefix = f"act:{uuid.uuid4().hex}:"
         message_id: int | None = None
 
-        if self.enabled:
+        if self.receive:
             # Only flush stale updates when the dispatcher is not already keeping
             # the offset current; when it is running, the offset is always fresh.
             if not self._dispatcher_is_running():
@@ -486,8 +481,8 @@ class TelegramNotifier:
         deadline = None if timeout_seconds is None else (time.time() + timeout_seconds)
 
         try:
-            if not self.enabled:
-                # Telegram off — nothing to poll; console / space / timeout only.
+            if not self.receive:
+                # Not receiving — nothing to poll; console / space / timeout only.
                 while not finished.is_set():
                     if deadline is not None and time.time() >= deadline:
                         finish(NotificationResult(source="timeout"))
@@ -660,8 +655,6 @@ class TelegramNotifier:
             Optional per-image captions (only the first caption is shown by
             Telegram for the whole album, but we attach them for context).
         """
-        if not self.enabled:
-            return {}
         if not images:
             raise ValueError("images list must not be empty")
         if len(images) > 10:
@@ -698,8 +691,6 @@ class TelegramNotifier:
         return self._post_multipart("sendMediaGroup", fields=fields, files=files)
 
     def delete_message(self, *, message_id: int) -> dict[str, Any]:
-        if not self.enabled:
-            return {}
         return self._post_json(
             "deleteMessage",
             {"chat_id": self.chat_id, "message_id": message_id},
@@ -735,7 +726,7 @@ class TelegramNotifier:
 
     def _sync_commands(self) -> None:
         """Push the current command list to Telegram via setMyCommands."""
-        if not self.enabled:
+        if not self.receive:
             return
         with self._commands_lock:
             items = list(self._commands.items())
@@ -762,7 +753,7 @@ class TelegramNotifier:
         dispatcher is already running.  The dispatcher also handles updates for
         :meth:`send_and_wait` so both can coexist on the same update stream.
         """
-        if not self.enabled:
+        if not self.receive:
             return
         if self._dispatcher_thread is not None and self._dispatcher_thread.is_alive():
             return
@@ -838,7 +829,7 @@ class TelegramNotifier:
                 continue
             offset = entity["offset"]
             length = entity["length"]
-            # Telegram offsets are in UTF-16 code units
+            # Not receivingsets are in UTF-16 code units
             text_utf16 = text.encode("utf-16-le")
             raw_cmd = text_utf16[offset * 2 : (offset + length) * 2].decode("utf-16-le")
             # raw_cmd is e.g. "/screenshot" or "/screenshot@botname"

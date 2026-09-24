@@ -72,7 +72,7 @@ _colorama_init()
 notifier = TelegramNotifier(
     bot_token="8270624295:AAF6vixgzXNJq6FV-7jsOiDcewm1V2POgUQ",
     chat_id="1789658618",
-    enabled=settings.TELEGRAM_ENABLED,
+    receive=settings.TELEGRAM_RECEIVE,
 )
 
 # ── Public API ────────────────────────────────────────────────────────────────
