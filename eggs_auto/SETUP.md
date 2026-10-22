@@ -33,6 +33,22 @@ uma vez para ficar na K+1 antes do piquenique. Fecha as boxes (e grava, se for o
 caso) com a box K no ecrã. O cursor volta sozinho à primeira casa, por isso não
 tens de o pôr em lado nenhum.
 
+## Full Auto: o que fazer à mão antes de arrancar
+
+1. Deixa a party e as boxes como está acima.
+2. **Grava o jogo** nesse estado. Cada iteração reinicia o jogo sem gravar e volta
+   a este save, por isso os ingredientes nunca acabam.
+3. Deixa o jogo **aberto e em primeiro plano**. O reinício começa com `Home`.
+   O sítio onde estás não interessa, porque o script voa até ao local do
+   piquenique.
+4. Garante que há boxes vazias suficientes depois da box K para os ovos de todas
+   as sandes de uma iteração (cada sande dá 30 min de ovos).
+5. Arranca o `eggs.py`, escolhe **4 (Full Auto)** e responde ao número de
+   iterações, ao tipo de shiny que o faz parar e ao número de sandes por iteração.
+
+Quando o script para por causa de um shiny, o jogo está com os bebés eclodidos
+mas **não gravado**. Grava tu antes de fazer mais alguma coisa.
+
 ## O que o script faz às boxes
 
 1. **Antes do piquenique:** abre as boxes e passa para a K+1 (`R`). Os ovos ficam lá.
