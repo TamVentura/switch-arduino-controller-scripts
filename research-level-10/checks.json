@@ -146,9 +146,9 @@
   ]
  },
  {
-  "mon": "Electabuzz",
+  "mon": "Electrode",
   "name_ocr": "Electrode",
-  "name_score": 0.85,
+  "name_score": 1.0,
   "research_level": 2,
   "complete": false,
   "checks": [
@@ -232,9 +232,9 @@
   ]
  },
  {
-  "mon": "Hisuian Typhlosion",
+  "mon": "Typhlosion",
   "name_ocr": "Typhlosion",
-  "name_score": 0.714,
+  "name_score": 1.0,
   "research_level": 3,
   "complete": false,
   "checks": [
@@ -447,9 +447,9 @@
   ]
  },
  {
-  "mon": "Hisuian Decidueye",
+  "mon": "Decidueye",
   "name_ocr": "Decidueye",
-  "name_score": 0.692,
+  "name_score": 1.0,
   "research_level": 4,
   "complete": false,
   "checks": [
@@ -472,7 +472,7 @@
  {
   "mon": "Overqwil",
   "name_ocr": "Overquwil",
-  "name_score": 0.941,
+  "name_score": 0.875,
   "research_level": 4,
   "complete": false,
   "checks": [
@@ -861,9 +861,9 @@
   ]
  },
  {
-  "mon": "Hisuian Voltorb",
+  "mon": "Voltorb",
   "name_ocr": "Voltorb",
-  "name_score": 0.636,
+  "name_score": 1.0,
   "research_level": 5,
   "complete": false,
   "checks": [
@@ -992,9 +992,9 @@
   ]
  },
  {
-  "mon": "Hisuian Growlithe",
+  "mon": "Growlithe",
   "name_ocr": "Growlithe",
-  "name_score": 0.692,
+  "name_score": 1.0,
   "research_level": 6,
   "complete": false,
   "checks": [
@@ -1113,9 +1113,9 @@
   ]
  },
  {
-  "mon": "Hisuian Avalugg",
+  "mon": "Avalugg",
   "name_ocr": "Avalugg",
-  "name_score": 0.636,
+  "name_score": 1.0,
   "research_level": 6,
   "complete": false,
   "checks": [
@@ -1165,9 +1165,9 @@
   ]
  },
  {
-  "mon": "Hisuian Braviary",
+  "mon": "Braviary",
   "name_ocr": "Braviary",
-  "name_score": 0.667,
+  "name_score": 1.0,
   "research_level": 6,
   "complete": false,
   "checks": [

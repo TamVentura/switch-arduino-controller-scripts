@@ -192,7 +192,7 @@ def hatch_egg():
     time.sleep(0.8)
     hold("{")
 
-    while get_mode() != Mode.TEXT_BOX:
+    while get_mode() != Mode.TEXT_BOX_CONTINUE:
         if random.random() < 0.01:
             click("H", 1, repeat=2)
         set_right_stick(1 - random.random() * 0.1, random.random() * 0.2 - 0.1)
@@ -200,11 +200,11 @@ def hatch_egg():
         time.sleep(2)
         continue
     release("{")
-    while get_mode() == Mode.TEXT_BOX:
+    while get_mode() == Mode.TEXT_BOX_CONTINUE:
         click("A", 0.3)
     temp = 0
     time.sleep(5)
-    while get_mode() != Mode.TEXT_BOX:
+    while get_mode() != Mode.TEXT_BOX_CONTINUE:
         if temp > 10:
             break
         temp += 1

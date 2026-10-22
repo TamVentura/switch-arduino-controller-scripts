@@ -19,6 +19,7 @@ is_stopped() -> bool
 wait_for_pixel(x, y, rgb_hex, tolerance, interval)
 """
 
+import ctypes
 import os
 import subprocess
 import threading
@@ -66,6 +67,7 @@ _stop_event = threading.Event()
 _ready_event = threading.Event()
 _show_debug = False
 _keyboard_mode = False
+_focus_on_open = False  # set by start_capture(focus=...)
 _fs, _fx_off, _fy_off = 1.0, 0, 0
 
 _press_callback = None  # press_callback(arduino_key, sleep) — set by start_capture
@@ -135,6 +137,168 @@ _KB_MAP = {
     ord("n"): "n",
     ord("m"): "m",
 }
+
+
+# ---------------------------------------------------------------------------
+# Window placement (Win32)
+# The preview window opens on a monitor other than the one showing the window
+# that currently has focus, so it doesn't cover the editor/terminal being used,
+# and it only keeps the focus it steals when start_capture(focus=True).
+# ---------------------------------------------------------------------------
+_user32 = ctypes.windll.user32 if os.name == "nt" else None
+
+
+class _RECT(ctypes.Structure):
+    _fields_ = [
+        ("left", ctypes.c_long),
+        ("top", ctypes.c_long),
+        ("right", ctypes.c_long),
+        ("bottom", ctypes.c_long),
+    ]
+
+
+class _MONITORINFO(ctypes.Structure):
+    _fields_ = [
+        ("cbSize", ctypes.c_ulong),
+        ("rcMonitor", _RECT),
+        ("rcWork", _RECT),
+        ("dwFlags", ctypes.c_ulong),
+    ]
+
+
+if _user32 is not None:
+    _MONITORENUMPROC = ctypes.WINFUNCTYPE(
+        ctypes.c_int,  # BOOL
+        ctypes.c_void_p,  # HMONITOR
+        ctypes.c_void_p,  # HDC
+        ctypes.POINTER(_RECT),  # LPRECT
+        ctypes.c_void_p,  # LPARAM
+    )
+    _ENUMWINDOWSPROC = ctypes.WINFUNCTYPE(
+        ctypes.c_int,  # BOOL
+        ctypes.c_void_p,  # HWND
+        ctypes.c_void_p,  # LPARAM
+    )
+    # Handles are pointer-sized — the default c_int restype truncates them.
+    _user32.GetForegroundWindow.restype = ctypes.c_void_p
+    _user32.MonitorFromWindow.restype = ctypes.c_void_p
+    _user32.MonitorFromWindow.argtypes = [ctypes.c_void_p, ctypes.c_ulong]
+
+_MONITOR_DEFAULTTONEAREST = 2
+
+
+def _foreground_window():
+    """HWND of the window that currently has focus (0 when unavailable)."""
+    if _user32 is None:
+        return 0
+    try:
+        return _user32.GetForegroundWindow() or 0
+    except Exception:
+        return 0
+
+
+def _monitor_work_areas():
+    """[(hmonitor, rcWork)] for every monitor, in enumeration order."""
+    found = []
+
+    def _cb(hmon, hdc, lprect, lparam):
+        info = _MONITORINFO()
+        info.cbSize = ctypes.sizeof(_MONITORINFO)
+        if _user32.GetMonitorInfoW(ctypes.c_void_p(hmon), ctypes.byref(info)):
+            found.append((hmon, info.rcWork))
+        return 1
+
+    _user32.EnumDisplayMonitors(None, None, _MONITORENUMPROC(_cb), 0)
+    return found
+
+
+def _place_away_from(window_name, avoid_hwnd, width, height):
+    """Centre `window_name` on a monitor other than the one showing `avoid_hwnd`.
+
+    Falls back to a plain resize when there is only one monitor (or when the
+    Win32 calls are unavailable), so the caller never has to care.
+    """
+    if _user32 is None or not avoid_hwnd:
+        cv2.resizeWindow(window_name, width, height)
+        return
+    try:
+        busy = _user32.MonitorFromWindow(
+            ctypes.c_void_p(avoid_hwnd), _MONITOR_DEFAULTTONEAREST
+        )
+        others = [(h, r) for h, r in _monitor_work_areas() if h != busy]
+        if not others:
+            cv2.resizeWindow(window_name, width, height)
+            return
+        # Biggest of the remaining screens — the best one to watch the game on.
+        _, work = max(
+            others, key=lambda m: (m[1].right - m[1].left) * (m[1].bottom - m[1].top)
+        )
+        work_w = work.right - work.left
+        work_h = work.bottom - work.top
+        w = min(width, work_w)
+        h = min(height, work_h)
+        cv2.resizeWindow(window_name, w, h)
+        cv2.moveWindow(
+            window_name, work.left + (work_w - w) // 2, work.top + (work_h - h) // 2
+        )
+    except Exception as e:
+        print(f"{Fore.YELLOW}Window placement failed:{Style.RESET_ALL} {e}")
+        cv2.resizeWindow(window_name, width, height)
+
+
+def _give_focus_back(hwnd):
+    """Hand the focus back to `hwnd` after the preview window stole it."""
+    if _user32 is None or not hwnd:
+        return
+    try:
+        _user32.SetForegroundWindow(ctypes.c_void_p(hwnd))
+    except Exception:
+        pass
+
+
+def _find_own_window(title):
+    """HWND of this process's top-level window titled `title` (0 if none).
+
+    Matched by pid so a stale window with the same title in another process
+    (an earlier run that didn't clean up) is never picked up.
+    """
+    if _user32 is None:
+        return 0
+    own_pid = os.getpid()
+    found = []
+
+    def _cb(hwnd, lparam):
+        pid = ctypes.c_ulong()
+        _user32.GetWindowThreadProcessId(ctypes.c_void_p(hwnd), ctypes.byref(pid))
+        if pid.value == own_pid:
+            buf = ctypes.create_unicode_buffer(len(title) + 2)
+            _user32.GetWindowTextW(ctypes.c_void_p(hwnd), buf, len(buf))
+            if buf.value == title:
+                found.append(hwnd)
+                return 0  # stop enumerating
+        return 1
+
+    try:
+        _user32.EnumWindows(_ENUMWINDOWSPROC(_cb), 0)
+    except Exception:
+        return 0
+    return found[0] if found else 0
+
+
+def _take_focus(window_name):
+    """Bring the preview window to the front and give it the keyboard focus.
+
+    Windows only lets the foreground process do this, so it silently does
+    nothing when the script was started from a background process — the window
+    is still placed and shown, it just doesn't steal the focus.
+    """
+    hwnd = _find_own_window(window_name)
+    if not hwnd:
+        return
+    try:
+        _user32.SetForegroundWindow(ctypes.c_void_p(hwnd))
+    except Exception:
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -273,11 +437,18 @@ def _capture_loop():
     grabber.start()
 
     window_name = "Capture"
+    # Read before the window exists: creating it takes the focus away.
+    focused_hwnd = _foreground_window()
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(window_name, 1280, 720)
+    _place_away_from(window_name, focused_hwnd, 1280, 720)
     cv2.setMouseCallback(window_name, _on_mouse)
+    if _focus_on_open:
+        _take_focus(window_name)
+    else:
+        _give_focus_back(focused_hwnd)
 
     canvas = None
+    first_frame_shown = False
 
     while not _stop_event.is_set():
         try:
@@ -394,6 +565,17 @@ def _capture_loop():
                 cv2.imshow(window_name, overlay)
             else:
                 cv2.imshow(window_name, canvas)
+            _ready_event.set()
+
+            if not first_frame_shown:
+                first_frame_shown = True
+                # The first imshow can re-activate the window, so settle the
+                # focus once more now that there is something to look at.
+                if _focus_on_open:
+                    _take_focus(window_name)
+                else:
+                    _give_focus_back(focused_hwnd)
+
             key = cv2.waitKeyEx(10)  # ~60 fps cap
             if key == ord("q"):
                 _stop_event.set()
@@ -453,7 +635,6 @@ def _capture_loop():
         except Exception as e:
             print(f"{Fore.RED}Error in capture loop:{Style.RESET_ALL} {e}")
             _stop_event.set()
-        _ready_event.set()
 
     _stop_event.set()
     # grabber.join(timeout=1)
@@ -474,7 +655,9 @@ def _capture_loop():
 # ---------------------------------------------------------------------------
 
 
-def start_capture(press_callback=None, debug_regions=None, key_callback=None):
+def start_capture(
+    press_callback=None, debug_regions=None, key_callback=None, focus=False
+):
     """Start the background capture thread.
 
     press_callback  -- called as press_callback(arduino_key, sleep) when a
@@ -484,13 +667,20 @@ def start_capture(press_callback=None, debug_regions=None, key_callback=None):
                        is active (toggle with 'g').
     key_callback    -- called as key_callback(key, frame) for any key not
                        handled by the capture lib itself.
+    focus           -- keep the focus on the preview window when it opens.
+                       False (default) hands the focus straight back to the
+                       window that had it, so the preview can be watched while
+                       typing somewhere else.  Either way the window opens on a
+                       monitor other than the one holding the focused window.
 
     Returns the background thread.
     """
     global _press_callback, _debug_regions, _key_callback, _capture_thread
+    global _focus_on_open
     _press_callback = press_callback
     _debug_regions = debug_regions or []
     _key_callback = key_callback
+    _focus_on_open = focus
 
     _stop_event.clear()
     _capture_thread = threading.Thread(target=_capture_loop, daemon=True)

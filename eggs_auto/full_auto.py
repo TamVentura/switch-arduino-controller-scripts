@@ -6,9 +6,9 @@ from typing import Literal
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "."))
 import codecs
 
-import eggs_auto.hatch_eggs as hatch_eggs
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+import eggs_auto.hatch_eggs as hatch_eggs
 import time
 
 from pokemon_sv import *
@@ -17,7 +17,7 @@ from recorder import play_recording
 from switch import (Fore, NotificationResult, Style, TelegramAction,
                     TelegramNotifier, _run, capture, click,
                     connect, controller, hold, hold_for, launch, notifier, ocr,
-                    release, restart_game, set_left_stick, set_right_stick,
+                    release, restart_sv, set_left_stick, set_right_stick,
                     settings)
 
 
@@ -41,7 +41,10 @@ def get_iterations():
             ),
         )
         if result.source == "console":
-            if not result.action_value or not (
+            if not result.action_value:
+                iterations = -1
+                continue
+            if not (
                 result.action_value.isdigit()
                 or (
                     result.action_value.startswith("-")

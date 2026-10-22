@@ -138,7 +138,7 @@ def thread_read_serial():
         exit(-1)
 
 
-def click(key, sleep=0.5, repeat=1):
+def click(key, sleep=0.5, repeat=1, hold_for=0.1):
     """Send a momentary button press (key down → 0.1 s → key up)."""
     if _should_gate():
         switch_gate().wait()
@@ -151,12 +151,20 @@ def click(key, sleep=0.5, repeat=1):
         raise RuntimeError("Arduino not connected; call connect() first")
     for _ in range(repeat):
         hold(key)
-        time.sleep(0.2)
+        time.sleep(hold_for)
         release(key)
         time.sleep(sleep)
 
 
-def hold(key):
+def hold(key :str):
+    if(key.lower()=="up"):
+        key="4"
+    elif(key.lower()=="down"):
+        key="2"
+    elif(key.lower()=="left"):
+        key="3"
+    elif(key.lower()=="right"):
+        key="1"
     """Send a key down signal without releasing it."""
     if settings.PRINT_KEY:
         print(f"{Fore.YELLOW}KEY DOWN:{Style.RESET_ALL}", key)
@@ -166,7 +174,15 @@ def hold(key):
     _write("1".encode())  # '1' means "key down" in the Arduino code
 
 
-def release(key):
+def release(key: str):
+    if(key.lower()=="up"):
+        key="4"
+    elif(key.lower()=="down"):
+        key="2"
+    elif(key.lower()=="left"):
+        key="3"
+    elif(key.lower()=="right"):
+        key="1"
     """Send a key up signal."""
     if settings.PRINT_KEY:
         print(f"{Fore.YELLOW}KEY UP:{Style.RESET_ALL}", key)

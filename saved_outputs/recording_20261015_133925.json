@@ -1,0 +1,174 @@
+{
+  "recorded_at": "2026-10-15T13:39:25",
+  "duration": 15.869,
+  "commands": [
+    {
+      "sleep_before": 1.0638,
+      "cmd": "hold",
+      "args": {
+        "key": "B"
+      }
+    },
+    {
+      "sleep_before": 0.1195,
+      "cmd": "release",
+      "args": {
+        "key": "B"
+      }
+    },
+    {
+      "sleep_before": 0.601,
+      "cmd": "hold",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.1195,
+      "cmd": "release",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.5466,
+      "cmd": "hold",
+      "args": {
+        "key": "B"
+      }
+    },
+    {
+      "sleep_before": 0.1375,
+      "cmd": "release",
+      "args": {
+        "key": "B"
+      }
+    },
+    {
+      "sleep_before": 0.1028,
+      "cmd": "hold",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.1204,
+      "cmd": "release",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 1.9707,
+      "cmd": "hold",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.1362,
+      "cmd": "release",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.65,
+      "cmd": "hold",
+      "args": {
+        "key": "B"
+      }
+    },
+    {
+      "sleep_before": 0.0869,
+      "cmd": "release",
+      "args": {
+        "key": "B"
+      }
+    },
+    {
+      "sleep_before": 0.171,
+      "cmd": "hold",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.1383,
+      "cmd": "release",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.4117,
+      "cmd": "hold",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.1368,
+      "cmd": "release",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.7351,
+      "cmd": "hold",
+      "args": {
+        "key": "B"
+      }
+    },
+    {
+      "sleep_before": 0.1371,
+      "cmd": "release",
+      "args": {
+        "key": "B"
+      }
+    },
+    {
+      "sleep_before": 0.1191,
+      "cmd": "hold",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.1368,
+      "cmd": "release",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.5672,
+      "cmd": "hold",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.1373,
+      "cmd": "release",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 5.7454,
+      "cmd": "hold",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.1199,
+      "cmd": "release",
+      "args": {
+        "key": "A"
+      }
+    }
+  ]
+}

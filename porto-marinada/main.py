@@ -33,7 +33,7 @@ def main():
             change_date()
             open_game()
         else:
-            restart_game()
+            restart_sv()
 
 
 def save_game():

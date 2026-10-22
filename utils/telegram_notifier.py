@@ -368,6 +368,7 @@ class TelegramNotifier:
         delete_message_after_finish: bool = True,
         wait_for_text: bool = False,
         catch_space: bool = False,
+        force_console_action_value: bool = False,
     ) -> NotificationResult:
         allowed_updates = (
             ["callback_query", "message"] if wait_for_text else ["callback_query"]
@@ -437,14 +438,23 @@ class TelegramNotifier:
             try:
                 import sys
 
-                self.flush_input()
-                typed = input(console_prompt)
-                finish(
-                    NotificationResult(
-                        source="console",
-                        action_value=typed,
+                valid = False
+                while not valid:
+                    self.flush_input()
+                    typed = input(console_prompt)
+                    if force_console_action_value and actions:
+                        if typed not in [action.value for action in actions]:
+                            print(
+                                f"Resposta inválida. Respostas permitidas: {', '.join([action.value for action in actions])}"
+                            )
+                            continue
+                    valid = True
+                    finish(
+                        NotificationResult(
+                            source="console",
+                            action_value=typed,
+                        )
                     )
-                )
             except EOFError:
                 pass
             except Exception as exc:

@@ -1,0 +1,48 @@
+{
+  "recorded_at": "2026-10-15T14:01:11",
+  "duration": 21.542,
+  "commands": [
+    {
+      "sleep_before": 11.9842,
+      "cmd": "hold",
+      "args": {
+        "key": "B"
+      }
+    },
+    {
+      "sleep_before": 0.1208,
+      "cmd": "release",
+      "args": {
+        "key": "B"
+      }
+    },
+    {
+      "sleep_before": 0.171,
+      "cmd": "hold",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.1541,
+      "cmd": "release",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 5.5036,
+      "cmd": "hold",
+      "args": {
+        "key": "B"
+      }
+    },
+    {
+      "sleep_before": 0.0512,
+      "cmd": "release",
+      "args": {
+        "key": "B"
+      }
+    }
+  ]
+}

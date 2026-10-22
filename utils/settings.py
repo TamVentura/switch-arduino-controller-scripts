@@ -13,7 +13,7 @@ BAUDRATE  = 115200
 # ---------------------------------------------------------------------------
 # Capture device
 # ---------------------------------------------------------------------------
-CAPTURE_DEVICE = 0          # OpenCV device index (usually 1 for external capture card)
+CAPTURE_DEVICE = 4          # OpenCV device index (usually 1 for external capture card)
 CAPTURE_WIDTH  = 1920
 CAPTURE_HEIGHT = 1080
 CAPTURE_FPS    = 60
@@ -26,7 +26,7 @@ TESSDATA_PATH = r"C:\Program Files\Tesseract-OCR\tessdata"
 # ---------------------------------------------------------------------------
 # Telegram
 # ---------------------------------------------------------------------------
-TELEGRAM_RECEIVE = True     # False: send_and_wait / bot commands only use the console; plain sends still go out
+TELEGRAM_RECEIVE = False     # False: send_and_wait / bot commands only use the console; plain sends still go out
 
 # ---------------------------------------------------------------------------
 # Debug / logging

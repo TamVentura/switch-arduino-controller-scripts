@@ -1,19 +1,20 @@
 import os
 import sys
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "."))
+import codecs
+
+print(os.environ.get("PYTHONIOENCODING", "").lower())
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+import eggs_auto.hatch_eggs as hatch_eggs
+
 from eggs_auto.full_auto import (
     get_iterations,
     get_number_of_sandwich_per_iteration,
     stop_at_shiny,
 )
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "."))
-import codecs
-
-print(os.environ.get("PYTHONIOENCODING", "").lower())
-import eggs_auto.hatch_eggs as hatch_eggs
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import time
 
 from pokemon_sv import *
@@ -36,7 +37,7 @@ from switch import (
     notifier,
     ocr,
     release,
-    restart_game,
+    restart_sv,
     set_left_stick,
     set_right_stick,
     settings,
@@ -136,7 +137,7 @@ def start(mode: str = ""):
         number_sandwiches_iteration = get_number_of_sandwich_per_iteration()
         while True:
             for _ in range(iterations if iterations != -1 else 9999):
-                restart_game()
+                restart_sv()
                 _goto_picnic_location()
                 get_picnic_ready()
                 for _ in range(number_sandwiches_iteration):
@@ -164,7 +165,7 @@ def start(mode: str = ""):
                             sys.exit()
 
     if mode == "restart":
-        restart_game()
+        restart_sv()
         mode = "no_location"
 
     if mode == "stop":
@@ -348,7 +349,7 @@ def _open_map():
         while get_mode() != Mode.IN_GAME:
             click("B", 1)
         while get_mode() != Mode.MAP:
-            click("Y", 1)
+            click("Y", 2)
     click("l", repeat=4)
 
 
@@ -421,7 +422,7 @@ def get_egg():
     global eggs_bred_total, eggs_bred_batch
     time.sleep(90)
     click("A", 0.4, 1)
-    while get_mode() == Mode.QUESTION_INPUT or get_mode() == Mode.TEXT_BOX:
+    while get_mode() == Mode.QUESTION_INPUT or get_mode() == Mode.TEXT_BOX or get_mode() == Mode.TEXT_BOX_CONTINUE:
         click("A", 0.2)
 
         if get_mode() == Mode.QUESTION_INPUT:

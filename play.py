@@ -37,4 +37,4 @@ def a():
         # cv2.imshow("Matches", result)
 
 
-launch(a)
+launch(a, focus=True)

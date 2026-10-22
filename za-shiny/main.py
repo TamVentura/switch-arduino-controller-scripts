@@ -25,7 +25,7 @@ from switch import (
     notifier,
     ocr,
     release,
-    restart_game,
+    restart_sv,
     set_left_stick,
     set_right_stick,
     settings,

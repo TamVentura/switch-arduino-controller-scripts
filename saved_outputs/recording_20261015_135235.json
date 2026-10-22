@@ -1,0 +1,62 @@
+{
+  "recorded_at": "2026-10-15T13:52:35",
+  "duration": 21.554,
+  "commands": [
+    {
+      "sleep_before": 15.0517,
+      "cmd": "hold",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.1197,
+      "cmd": "release",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 1.5249,
+      "cmd": "hold",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.1023,
+      "cmd": "release",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.7524,
+      "cmd": "hold",
+      "args": {
+        "key": "B"
+      }
+    },
+    {
+      "sleep_before": 0.1723,
+      "cmd": "hold",
+      "args": {
+        "key": "A"
+      }
+    },
+    {
+      "sleep_before": 0.0174,
+      "cmd": "release",
+      "args": {
+        "key": "B"
+      }
+    },
+    {
+      "sleep_before": 0.1028,
+      "cmd": "release",
+      "args": {
+        "key": "A"
+      }
+    }
+  ]
+}

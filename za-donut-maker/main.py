@@ -63,6 +63,7 @@ saved_recipes = {
                     "candies": "Candies",
                     "berries": "Berries",
                     "treasure": "Treasure",
+                    "coins": "Ghimighoul Coins"
                 },
                 "required": True,
                 "position": "powers[0].extra",
@@ -71,7 +72,7 @@ saved_recipes = {
     },
     "shiny": {
         "name": "Shiny",
-        "recipe": "kasib 8",
+        "recipe": "tanga 8",
         "powers": [
             {"power": "shiny", "level": 3},
             {"power": "", "level": 3},
@@ -118,12 +119,18 @@ def main():
     recipe, powers = _choose_donut()
     count = ask_int("Quantos donuts")
 
-    print()
+    auto_mode = confirm("Continuar automáticamente?", default=False)
+
+    print(f"{Fore.YELLOW}┌───────────────────┐{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}│ A iniciar procura │{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}└───────────────────┘{Style.RESET_ALL}\n")
+
+    print("\n\n ")
     print(f"{Fore.CYAN}Receita:{Style.RESET_ALL} {recipe}")
     _print_powers("Powers:", powers, Fore.CYAN)
     print(f"{Fore.CYAN}Quantidade:{Style.RESET_ALL} {count}\n")
 
-    try_donut(recipe, powers, count)
+    try_donut(recipe, powers, count, auto_mode)
 
 
 def _choose_donut() -> tuple[str, list[Power]]:
@@ -322,7 +329,7 @@ def _print_powers(title: str, powers: list[Power], color: str) -> None:
         print(f"  {color}-{Style.RESET_ALL} {_format_power(power)}")
 
 
-def try_donut(recipe, powers: list[Power], count=1):
+def try_donut(recipe, powers: list[Power], count=1, auto_mode=False):
     initial_count = count
     while count > 0:
 
@@ -338,7 +345,19 @@ def try_donut(recipe, powers: list[Power], count=1):
         if isValid:
             if count > 1:
                 # Donut is valid and we have more donuts to make
-
+                if auto_mode:
+                    notifier.send_photo(
+                        caption=f"Donut encontrado! Faltam {count - 1} de {initial_count} donuts.",
+                        frame=capture.get_latest_frame(),
+                    )
+                    print(f"{Fore.LIGHTGREEN_EX}Donut encontrado! Faltam {count - 1} de {initial_count} donuts.{Style.RESET_ALL}")
+                    count -= 1
+                    click("A", 2)
+                    click("B", 2)
+                    click("A", 1)
+                    save_game()
+                    continue
+                    
                 notifier_result = notifier.send_and_wait(
                     text=f"Donut encontrado! Faltam {count - 1} de {initial_count} donuts. Pretende continuar?",
                     console_prompt=f"{Fore.LIGHTGREEN_EX}Donut encontrado! Faltam {count - 1} de {initial_count} donuts. Pretende continuar? Y para sim, N para nao, ou R para tentar novamente.: {Style.RESET_ALL}",
@@ -438,7 +457,7 @@ def check_donut(expected_powers: list[Power]):
             if expected_power["power"] != power["power"]:
                 continue
             # so se compara o que a receita pediu; o que ela nao pede nao invalida
-            if "level" in expected_power and expected_power["level"] < power.get(
+            if "level" in expected_power and expected_power["level"] > power.get(
                 "level", 3
             ):
                 isValid = False
@@ -458,8 +477,10 @@ def reset_backup():
     print(f"{Fore.LIGHTBLUE_EX}Restarting game...{Style.RESET_ALL}")
     click("H", 0.5)
     click("Y")
-    click("A", 1)
-    click("A", 8)
+    click("A")
+    capture.wait_for_pixel(1674, 2114, "#2f2d2f")
+    click("A")
+    capture.wait_for_pixel(2898, 1022, "#90cd91")
     hold("4")
     hold("X")
     hold("B")
@@ -487,7 +508,10 @@ def go_to_donut():
     time.sleep(3)
     set_left_stick(0, -1)
     click("B", 1)
-    click("A", 2.5)
+    click("A",0.5)
+    while capture.is_pixel_color(1666, 680, "#010001"):
+        time.sleep(0.1)
+    time.sleep(0.1)
     click("B")
     time.sleep(1)
     set_left_stick(-1, 0)
@@ -496,10 +520,9 @@ def go_to_donut():
 
 
 def talk_to_ansha():
-    click("A", 2)
-    click("A")
-    click("down", repeat=2)
-    click("A")
+    click("A", 1)
+    click("A", 1)
+    click("A", 1)
     click("up")
 
 
@@ -578,7 +601,7 @@ def make_donut(recipe):
             reset_backup()
             exit()
         else:
-            return False
+            return True
 
     click("+", 1)
     click("A")

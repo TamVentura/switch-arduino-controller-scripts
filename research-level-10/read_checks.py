@@ -83,8 +83,10 @@ LIST_PX_TO_CENTER = 60  # do pixel testado até ao centro da linha
 SELECTED_HEX = "#f4e5d1"
 SELECTED_TOL = 20
 
-# Nome da linha selecionada, relativo ao centro da linha (4K)
-NAME_BOX = (3100, -52, 3540, 52)  # x1, dy1, x2, dy2
+# Nome da linha selecionada, relativo ao centro da linha (4K). Acaba antes da
+# coluna da pokébola (x=3508), senão o badge sangra para dentro e o OCR cola
+# um glifo de lixo no fim do nome.
+NAME_BOX = (3100, -52, 3490, 52)  # x1, dy1, x2, dy2
 
 # Coluna da pokébola: a mesma para as 5 linhas, cortada por linha. Um mon com
 # pokébola está a research level 10 — é onde se pára.
@@ -139,14 +141,19 @@ def wake() -> None:
     _get("/stick?side=right&x=0&y=1&secs=0.15")
 
 
-def shot() -> np.ndarray:
-    wake()
-    time.sleep(0.25)
+def shot_only() -> np.ndarray:
+    """Uma captura, sem acordar o ecrã primeiro."""
     _get("/shot?keep=0")
     im = cv2.imread(SHOT_PNG)
     if im is None:
         raise RuntimeError("não consegui ler " + SHOT_PNG)
     return im
+
+
+def shot() -> np.ndarray:
+    wake()
+    time.sleep(0.25)
+    return shot_only()
 
 
 # O /press segura a tecla 0.2s, o que chega para a lista disparar o auto-repeat
@@ -416,21 +423,47 @@ def read_list(im: np.ndarray) -> dict:
 # Nomes: fuzzy match contra a dex do game8
 # ─────────────────────────────────────────────────────────────────────────────
 
-_NAMES = [m["name"] for m in json.load(open(DEX_INDEX, encoding="utf-8"))]
+# O jogo mostra o nome da espécie sem a variante: onde a dex do game8 diz
+# "Hisuian Zorua" ou "Dialga (Origin Forme)", no ecrã está "Zorua" e "Dialga".
+# Como as variantes não interessam aqui, encosta-se ao nome nu.
+_FORM_PREFIXES = ("Hisuian ", "Alolan ")
+
+
+def _bare(name: str) -> str:
+    for p in _FORM_PREFIXES:
+        if name.startswith(p):
+            name = name[len(p) :]
+    if "(" in name:
+        name = name[: name.index("(")]
+    return name.strip()
+
+
+_NAMES = sorted(
+    {_bare(m["name"]) for m in json.load(open(DEX_INDEX, encoding="utf-8"))}
+)
 
 
 def match_name(raw: str) -> tuple[str | None, float]:
-    txt = "".join(c for c in raw if c.isalnum() or c in " -.'").strip()
+    """Encosta o OCR do nome ao nome de espécie mais parecido da dex.
+
+    O lixo que o OCR apanha vem sempre no fim (é a pokébola a sangrar para
+    dentro da caixa), por isso o início do nome é a parte de que se pode
+    confiar: cada candidato é comparado com o **início** do texto lido, do
+    tamanho do próprio candidato. Empates desfazem-se pelo candidato mais
+    longo, que é o que explica mais do que foi lido — assim `Porygon2` ganha
+    ao `Porygon` e `Machoke` ao `Machop`.
+    """
+    txt = "".join(c for c in raw if c.isalnum() or c in " -.'")
+    txt = txt.strip(" -.'")
     if not txt:
         return None, 0.0
-    best, score = None, 0.0
+    low = txt.lower()
+    best, score = None, (0.0, 0)
     for n in _NAMES:
-        s = difflib.SequenceMatcher(None, txt.lower(), n.lower()).ratio()
-        if len(txt) >= 5 and n.lower().startswith(txt.lower()[:5]):
-            s = max(s, 0.85)  # o OCR às vezes cola lixo no fim do nome
-        if s > score:
-            best, score = n, s
-    return best, round(score, 3)
+        s = difflib.SequenceMatcher(None, low[: len(n)], n.lower()).ratio()
+        if (s, len(n)) > score:
+            best, score = n, (s, len(n))
+    return best, round(score[0], 3)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

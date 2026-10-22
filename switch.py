@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import os
 import sys
+import threading
 import traceback
 
 # ── Ensure utils/ is importable regardless of CWD or script location ──────────
@@ -75,6 +76,8 @@ notifier = TelegramNotifier(
     receive=settings.TELEGRAM_RECEIVE,
 )
 
+lock = threading.Lock()
+
 # ── Public API ────────────────────────────────────────────────────────────────
 __all__ = [
     # modules
@@ -111,7 +114,7 @@ __all__ = [
     "Mode",
     "MenuOption",
     # Aux
-    "restart_game",
+    "restart_sv",
 ]
 
 
@@ -144,10 +147,16 @@ def _cmd_screenshot(_: str) -> None:
     notifier.send_photo(frame=frame, caption="Screenshot", closer=True)
 
 
+def thread_click(key, sleep=0.5, repeat=1):
+    with lock:
+        click(key, sleep, repeat)
+
+
 def _start(
     debug_regions: list | None = None,
     key_callback=None,
     port: str | None = None,
+    focus: bool = False,
 ) -> None:
     """Connect to the Arduino and open the capture window.
 
@@ -162,22 +171,40 @@ def _start(
         Called for unhandled key presses: ``key_callback(key, frame)``.
     port:
         Serial port override.  Defaults to ``settings.COM_PORT``.
+    focus:
+        Whether the capture window keeps the focus when it opens.
+        Defaults to False — the focus goes straight back to the window that
+        had it (editor/terminal), and the capture window opens on another
+        monitor so it can be watched while working.
     """
     controller.connect(port or settings.COM_PORT)
     capture.start_capture(
-        press_callback=click,
+        press_callback=thread_click,
         debug_regions=debug_regions or [],
         key_callback=key_callback,
+        focus=focus,
     )
+    print(f"{Fore.GREEN}Connected to Arduino on {settings.COM_PORT}{Style.RESET_ALL}")
     capture.wait_ready()
+    print(f"{Fore.GREEN}Capture window ready{Style.RESET_ALL}")
     capture.register_window_toggle_callback(xbox_passthrough.toggle_window)
-    notifier.register_command("screenshot", _cmd_screenshot)
-    notifier.register_command("pause", controller.pause)
-    notifier.start_command_listener()
+    print(f"{Fore.GREEN}Registered window toggle callback{Style.RESET_ALL}")
+    # Run the notifier command listener in a separate thread so it doesn't block the main thread
+    notifier_thread = threading.Thread(target=run_notifier)
+    notifier_thread.start()
+    
+    print(f"{Fore.GREEN}Registered command handlers{Style.RESET_ALL}")
 
     _play(port)
 
+    print(f"{Fore.GREEN}Done{Style.RESET_ALL}")
 
+def run_notifier():
+    notifier.register_command("screenshot", _cmd_screenshot)
+    notifier.register_command("resume", controller.resume)
+    notifier.register_command("pause", controller.pause)
+    notifier.register_command("toggle", controller.toggle_pause)
+    notifier.start_command_listener()
 def _run(fn) -> None:
     fn()
 
@@ -190,6 +217,7 @@ def launch(
     debug_regions: list | None = None,
     key_callback=None,
     port: str | None = None,
+    focus: bool = False,
 ) -> None:
     global launched
     if launched:
@@ -209,9 +237,17 @@ def launch(
         Forwarded to ``start()``.
     port:
         Serial port override.  Defaults to ``settings.COM_PORT``.
+    focus:
+        Whether the capture window keeps the focus when it opens (default
+        False).  Forwarded to ``start()``.
     """
     try:
-        _start(debug_regions=debug_regions, key_callback=key_callback, port=port)
+        _start(
+            debug_regions=debug_regions,
+            key_callback=key_callback,
+            port=port,
+            focus=focus,
+        )
         _run(fn)
     except (KeyboardInterrupt, SystemExit):
         print("A")
@@ -226,13 +262,13 @@ def launch(
                 _fn()
             except Exception:
                 pass
-        
 
 
-def restart_game():
-    click("H", 2)
-    click("Y", 2)
-    click("A", 1.5)
+def restart_sv():
+    click("H",2)
+    click("Y",2)
+    click("A")
+    capture.wait_for_pixel(1674, 2114, "#2f2d2f")
     click("A", 19)
     click("A", 13)
 
@@ -242,6 +278,7 @@ def better_input(prompt: object = "", /):
         return original_input(prompt)
     except (KeyboardInterrupt, EOFError):
         raise KeyboardInterrupt()
+
 
 original_input = input
 
